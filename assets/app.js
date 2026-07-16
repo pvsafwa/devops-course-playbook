@@ -36,13 +36,13 @@
       { id:'interview-day-to-day', label:'Project & Day-to-Day', icon:'🗣️', c:'#e11d48', built:true },
     ]},
     { title: 'Advanced drills · playbook only', items: [
-      { id:'inter-team',   label:'Inter-team Collaboration', icon:'🤝', c:'#8b5cf6', built:false },
-      { id:'intra-team',   label:'Intra-team Collaboration', icon:'👥', c:'#8b5cf6', built:false },
-      { id:'behavioural',  label:'Behavioural',               icon:'💬', c:'#8b5cf6', built:false },
-      { id:'war-stories',  label:'War Stories',                icon:'⚔️', c:'#8b5cf6', built:false },
-      { id:'system-design',label:'System Design',              icon:'🧩', c:'#8b5cf6', built:false },
-      { id:'devsecops',    label:'DevSecOps',                  icon:'🛡️', c:'#8b5cf6', built:false },
-      { id:'finops',       label:'FinOps',                      icon:'💰', c:'#8b5cf6', built:false },
+      { id:'inter-team',   label:'Inter-team Collaboration', icon:'🤝', c:'#8b5cf6', built:true, n:12 },
+      { id:'intra-team',   label:'Intra-team Collaboration', icon:'👥', c:'#8b5cf6', built:true, n:12 },
+      { id:'behavioural',  label:'Behavioural',               icon:'💬', c:'#8b5cf6', built:true, n:20 },
+      { id:'war-stories',  label:'War Stories',                icon:'⚔️', c:'#8b5cf6', built:true, n:17 },
+      { id:'system-design',label:'System Design',              icon:'🧩', c:'#8b5cf6', built:true, n:20 },
+      { id:'devsecops',    label:'DevSecOps',                  icon:'🛡️', c:'#8b5cf6', built:true, n:19 },
+      { id:'finops',       label:'FinOps',                      icon:'💰', c:'#8b5cf6', built:true, n:17 },
     ]},
   ];
 
