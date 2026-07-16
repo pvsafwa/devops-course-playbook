@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Current Project &amp; Day-to-Day Activities — Interview Prep</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body data-chapter="interview-day-to-day">
+<div class="wrap">
+  <aside class="rail"><!-- sidebar rendered by app.js --></aside>
+  <main class="main">
+
+    <div class="crumb" style="--accent:#e11d48"><a href="index.html">Home</a><span class="sep">›</span><span>Careers &amp; interviews</span><span class="sep">›</span><strong>Project &amp; Day-to-Day</strong></div>
+
+    <header class="hero" style="background:radial-gradient(1200px 300px at 0% -20%,#9f1239 0%,transparent 60%),linear-gradient(120deg,#3f0617,#4c0a1e 55%,#26030e)">
+      <div class="eyebrow">Interview prep — reactivating real experience, not inventing it</div>
+      <h2>Current Project &amp; Day-to-Day Activities</h2>
+      <p>This page is a rehearsal tool, not a script to recite word for word. Everything on it is grounded in real work at <strong>_VOIS (Vodafone Intelligent Solutions)</strong> — the goal is to trigger your own memory of what you actually did, so you can speak about it fluently and confidently, not to hand you lines to memorise. Anywhere you see a <code class="inl">[bracket]</code>, that's a real specific only you can fill in — a number, a tool version, a ticket type, a team name. Never let a bracket stand in as a spoken answer; fill it with your own recalled detail before you say it out loud, or speak around it honestly if you genuinely can't recall the exact figure.</p>
+      <div class="flow"><span>① The project answer</span><i>→</i><span>② The day-to-day answer</span><i>→</i><span>③ Follow-ups</span><i>→</i><span>④ VOIS-grounded deep dive</span><i>→</i><span>⑤ War stories</span><i>→</i><span>⑥ Concept mapping</span><i>→</i><span>⑦ Messy questions</span></div>
+    </header>
+
+    <div class="essentials"><div class="ess-h">⚡ Three things interviewers are actually asking for</div>
+      <p>These sound similar but want different answers. <strong>"Tell me about your project"</strong> wants the technical shape — what the system does, what stack it runs on, what you specifically owned. <strong>"What does your day-to-day look like"</strong> wants the operating rhythm — tickets, ceremonies, the 5 recurring areas (K8s, Terraform, CI/CD, Git, observability), and that it's a cycle, not a one-time build. <strong>"Tell me about a POC or something you built from scratch"</strong> wants a bounded, self-contained story with a clear before/after — different again from describing an ongoing, shared production system. Confusing these three is the single most common way a genuine, solid answer comes across as vague.</p>
+    </div>
+
+    <!-- ============================================================ PART 1: THE PROJECT ANSWER -->
+    <section class="lesson sec" id="project" style="--accent:#e11d48">
+      <div class="lessonhead"><span class="lnum">①</span><h4>"Tell me about your current/most recent project"</h4></div>
+      <p class="lessonsub">The technical shape: what the system does, what stack it runs on, what you specifically owned — not a chronological life story.</p>
+      <p>At <strong>_VOIS (Vodafone Intelligent Solutions)</strong>, you worked as a <strong>Cloud &amp; DevOps Engineer</strong> supporting a landscape of <strong>30+ microservices</strong> for [example: a specific Vodafone business unit or product line — fill in what you actually supported]. Your role sat across the full delivery path: CI/CD pipelines, GitOps-driven deployment to Kubernetes, infrastructure provisioning, and the observability that keeps all of it honest in production.</p>
+      <p>Concretely, the stack: <strong>CI/CD</strong> pipelines (Jenkins and/or GitHub Actions — [fill in which you actually used, and for which services]) feeding <strong>ArgoCD</strong> for GitOps-style continuous delivery into <strong>Amazon EKS</strong>, with <strong>Helm</strong> charts packaging each service's Kubernetes manifests. Infrastructure itself was provisioned through <strong>Terraform</strong> modules — cutting environment setup from days to hours — with <strong>Ansible</strong> for configuration management on top. Security was built into the pipeline with <strong>SonarQube</strong> (code quality) and <strong>Trivy</strong> (container/dependency scanning), with secrets handled through [AWS Secrets Manager / whichever secrets tool you actually used]. Observability ran on <strong>Prometheus, Grafana, Alertmanager, and Loki</strong> — roughly <strong>10 dashboards</strong> — which took incident detection from about <strong>30 minutes down to under 10</strong>.</p>
+      <div class="say"><b>Say it like this</b>"I'm a Cloud and DevOps Engineer at Vodafone Intelligent Solutions, where I support a landscape of over 30 microservices for [your business unit]. My role covers the full path from commit to production: CI/CD pipelines that feed ArgoCD for GitOps delivery into EKS, with Helm managing the Kubernetes side and Terraform provisioning the infrastructure underneath — that cut our environment setup time from days to hours. Security's built into the pipeline with SonarQube and Trivy, and on the operations side we run Prometheus, Grafana, Alertmanager, and Loki across about ten dashboards, which brought our incident detection time down from around thirty minutes to under ten. Day to day I'm also automating a lot of the manual toil around this with Python and Shell scripts, which has cut manual effort by roughly 60% on the tasks we've targeted."</p></div>
+    </section>
+
+    <!-- ============================================================ PART 2: THE DAY-TO-DAY ANSWER -->
+    <section class="lesson sec" id="daytoday" style="--accent:#e11d48">
+      <div class="lessonhead"><span class="lnum">②</span><h4>"What does your day-to-day look like?"</h4></div>
+      <p class="lessonsub">The operating rhythm — not a one-time build, a cycle you run continuously across five recurring areas.</p>
+      <p>A typical day moves through <strong>JIRA</strong> tickets — a mix of planned sprint work (a new service onboarding, a pipeline template improvement) and reactive tasks (an alert that fired overnight, a developer blocked on a Kubernetes issue). The five areas that recur constantly: <strong>Kubernetes</strong> (debugging pod/deployment/service issues for other teams, since you're often the K8s subject-matter expert they come to), <strong>Terraform</strong> (extending or reviewing infrastructure modules), <strong>CI/CD</strong> (maintaining and improving the Jenkins/GitHub Actions pipelines and the ArgoCD GitOps flow), <strong>Git</strong> (reviewing PRs, managing branching for releases), and <strong>observability</strong> (tuning alerts, building dashboards, being part of the 24/7 on-call rotation).</p>
+      <div class="fig"><svg viewBox="0 0 740 190" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="The day-to-day cycle: JIRA ticket, work in one of five areas, deploy via the pipeline, monitor, and feed back into the backlog">
+        <g font-family="Inter,sans-serif" font-size="10.5">
+          <rect x="20" y="70" width="130" height="50" rx="9" fill="#3f0617" stroke="#e11d48"/><text x="85" y="99" text-anchor="middle" font-weight="700" fill="#fecdd3">JIRA ticket</text>
+          <rect x="200" y="20" width="150" height="150" rx="10" fill="#26030e" stroke="#9f1239"/><text x="275" y="40" text-anchor="middle" font-size="10" font-weight="700" fill="#fda4af">The 5 areas</text>
+          <text x="275" y="62" text-anchor="middle" font-size="9" fill="#fecdd3">Kubernetes</text><text x="275" y="80" text-anchor="middle" font-size="9" fill="#fecdd3">Terraform</text><text x="275" y="98" text-anchor="middle" font-size="9" fill="#fecdd3">CI/CD</text><text x="275" y="116" text-anchor="middle" font-size="9" fill="#fecdd3">Git</text><text x="275" y="134" text-anchor="middle" font-size="9" fill="#fecdd3">Observability</text>
+          <rect x="400" y="70" width="130" height="50" rx="9" fill="#3f0617" stroke="#e11d48"/><text x="465" y="99" text-anchor="middle" font-weight="700" fill="#fecdd3">Pipeline → ArgoCD → EKS</text>
+          <rect x="580" y="70" width="140" height="50" rx="9" fill="#3f0617" stroke="#e11d48"/><text x="650" y="93" text-anchor="middle" font-weight="700" fill="#fecdd3">Monitor</text><text x="650" y="109" text-anchor="middle" font-size="8.5" fill="#fda4af">Prometheus/Grafana</text>
+          <defs><marker id="dta" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0 0 L7 3 L0 6 Z" fill="#e11d48"/></marker></defs>
+          <line x1="150" y1="95" x2="198" y2="95" stroke="#e11d48" stroke-width="1.6" marker-end="url(#dta)"/>
+          <line x1="350" y1="95" x2="398" y2="95" stroke="#e11d48" stroke-width="1.6" marker-end="url(#dta)"/>
+          <line x1="530" y1="95" x2="578" y2="95" stroke="#e11d48" stroke-width="1.6" marker-end="url(#dta)"/>
+          <path d="M650 122 C 650 165, 85 165, 85 122" fill="none" stroke="#9f1239" stroke-width="1.3" stroke-dasharray="5 4" marker-end="url(#dta)"/>
+          <text x="365" y="155" text-anchor="middle" font-size="9.5" fill="#fda4af">…feeds back into the backlog — it's a cycle, not a one-time build</text>
+        </g>
+      </svg><div class="figcap"><b>Not a one-time project — a cycle.</b> A ticket pulls you into one of five recurring areas, the work flows through the same pipeline every time, and what monitoring surfaces becomes tomorrow's tickets.</div></div>
+      <div class="say"><b>Say it like this</b>(longer version, for when they want more detail) "My day usually starts with the JIRA board — a mix of planned work and anything reactive that came in overnight. The work itself keeps coming back to five areas: Kubernetes, since I'm often the person other teams come to when a pod or deployment is misbehaving; Terraform, extending or reviewing our infrastructure modules; the CI/CD pipelines and the ArgoCD GitOps flow into EKS; Git, mostly PR review and release branching; and observability — tuning alerts and dashboards, and I'm part of the 24/7 on-call rotation. It's genuinely a cycle: what the monitoring surfaces becomes the next ticket, not a project that gets finished once."</p></div>
+      <div class="say"><b>Say it like this</b>(if asked for a specific challenge) "[Fill in one real, specific challenge you handled — for example: a service that kept getting OOMKilled and you had to right-size its resource limits and add a proper liveness probe; a Terraform state issue during a migration; a pipeline that needed to support a new deployment pattern. Use the war-story templates in Part 5 below to build this out properly with a real situation, action, tool, and measured outcome.]"</p>
+    </section>
+
+    <!-- ============================================================ PART 3: FOLLOW-UPS -->
+    <div class="phase interview" id="followups">
+      <div class="pbig">③</div>
+      <div class="pmeta"><div class="pk">Part 3 · Follow-ups</div><h3>The questions that arise from YOUR OWN story</h3>
+      <p>These follow-ups are built from the specific claims in Parts 1 and 2 above — your team shape, your ways of working, your reporting line, the specific tools you named — not generic domain deep-dives (Kubernetes/Terraform/CI-CD internals are covered separately in this site's course chapters). Answer each out loud, then reveal.</p></div>
+    </div>
+
+    <section class="sec" id="iq" style="--accent:#be123c">
+      <details class="iq"><summary><span class="qq">A1</span><span class="qtext">How big is your team, and how is the work split?</span><span class="rev">reveal ▸</span></summary>
+        <div class="ans"><span class="alab">Answer</span><p>[Fill in: team size, whether it's a dedicated DevOps/platform team serving multiple product teams, or embedded within one product team. Mention roughly how the DevOps/Cloud engineers split ownership — by service, by environment, or by function (pipelines vs infra vs monitoring).]</p></div>
+      </details>
+      <details class="iq"><summary><span class="qq">A2</span><span class="qtext">Who do you report to, and who do you work with most closely day to day?</span><span class="rev">reveal ▸</span></summary>
+        <div class="ans"><span class="alab">Answer</span><p>[Fill in your actual reporting line and the roles you interact with most — likely the development teams whose services you support, plus your own DevOps/platform lead.]</p></div>
+      </details>
+      <details class="iq"><summary><span class="qq">A3</span><span class="qtext">Is the DevOps function centralized, or does each product team have its own DevOps engineer?</span><span class="rev">reveal ▸</span></summary>
+        <div class="ans"><span class="alab">Answer</span><p>[Fill in: was this a shared/central DevOps team serving the 30+ microservices across multiple product teams, or embedded per-team? This shapes how you describe scale and self-service tooling.]</p></div>
+      </details>
+      <details class="iq"><summary><span class="qq">A4</span><span class="qtext">How do you and the development teams typically communicate — tickets, Slack, meetings?</span><span class="rev">reveal ▸</span></summary>
+        <div class="ans"><span class="alab">Answer</span><p>[Fill in the actual mix — JIRA tickets for planned work, a Slack/Teams channel for real-time asks, and whichever recurring syncs actually happened.]</p></div>
+      </details>
+      <details class="iq"><summary><span class="qq">B1</span><span class="qtext">Walk me through your JIRA workflow, end to end.</span><span class="rev">reveal ▸</span></summary>
+        <div class="ans"><span class="alab">Answer</span><p>Backlog → refinement with story points (Fibonacci) → sprint planning against capacity → the sprint itself with daily stand-ups and a mid-sprint check → sprint review/retrospective → velocity and burndown tracking. [Confirm this matches what your team actually ran, and adjust for anything different — e.g. if you used Kanban instead of Scrum for some of the work.]</p></div>
+      </details>
+      <details class="iq"><summary><span class="qq">B2</span><span class="qtext">Do you use Scrum, Kanban, or a mix?</span><span class="rev">reveal ▸</span></summary>
+        <div class="ans"><span class="alab">Answer</span><p>[Fill in what your team actually ran. A DevOps/platform team often runs more Kanban-like for interrupt-driven support work (production issues, ad hoc requests from other teams) and Scrum-like for planned improvement work — if that matches your experience, say so; it's a genuinely senior distinction to draw.]</p></div>
+      </details>
+      <details class="iq"><summary><span class="qq">B3</span><span class="qtext">How do on-call and incident response actually work on your team?</span><span class="rev">reveal ▸</span></summary>
+        <div class="ans"><span class="alab">Answer</span><p>[Fill in: rotation length/frequency, what tool pages you (PagerDuty, Opsgenie, or an internal system), and what the escalation path looks like. Mention the 24/7 on-call responsibility and the ~99.9% uptime target from your resume as the outcome this process supports.]</p></div>
+      </details>
+      <details class="iq"><summary><span class="qq">B4</span><span class="qtext">How do code changes actually get from a developer's laptop to production?</span><span class="rev">reveal ▸</span></summary>
+        <div class="ans"><span class="alab">Answer</span><p>A PR against the service's Git repo → CI runs (SonarQube + Trivy scans, tests) → merge → the CI/CD pipeline builds and pushes an image → ArgoCD detects the new manifest/image reference and syncs it into EKS. [Confirm the exact trigger — does merging to main auto-deploy, or is there a manual promotion/approval step per environment?]</p></div>
+      </details>
+      <details class="iq"><summary><span class="qq">C1</span><span class="qtext">How do you report status or incidents up to your manager or leadership?</span><span class="rev">reveal ▸</span></summary>
+        <div class="ans"><span class="alab">Answer</span><p>[Fill in: a regular status update format, an incident postmortem template, or a dashboard leadership checks directly. If you led or contributed to postmortems, that's a strong, concrete detail to include here.]</p></div>
+      </details>
+      <details class="iq"><summary><span class="qq">C2</span><span class="qtext">How do you measure whether your work is actually improving things?</span><span class="rev">reveal ▸</span></summary>
+        <div class="ans"><span class="alab">Answer</span><p>The concrete numbers from your own experience: environment setup time cut from days to hours via Terraform, incident detection time down from ~30 minutes to under 10 via the monitoring stack, ~60% reduction in manual effort via Python/Shell automation, and ~99.9% uptime maintained. These map directly onto the DORA metrics — lead time, and a stability signal.</p></div>
+      </details>
+      <details class="iq"><summary><span class="qq">C3</span><span class="qtext">Who owns the AWS cost/billing conversation, and were you involved in it?</span><span class="rev">reveal ▸</span></summary>
+        <div class="ans"><span class="alab">Answer</span><p>Yes — per your resume, AWS cost cleanup was part of your remit. [Fill in a specific example: identifying idle/oversized resources, right-sizing instances, cleaning up orphaned volumes/snapshots — use the Virtual Machines chapter's fleet-hygiene drills on this site as a prompt for what specifically you did.]</p></div>
+      </details>
+      <details class="iq"><summary><span class="qq">D1</span><span class="qtext">You mentioned reusable pipeline and Terraform templates — who uses them, and how did they get adopted?</span><span class="rev">reveal ▸</span></summary>
+        <div class="ans"><span class="alab">Answer</span><p>[Fill in: were these templates built for the whole 30+ microservice landscape as a self-service option? How did a new service onboard — copy a template repo, use a scaffolding tool, request it from your team? This is exactly the kind of "platform engineering" framing from the Fundamentals chapter's DevOps-vs-SRE-vs-Platform-Engineering distinction.]</p></div>
+      </details>
+      <details class="iq"><summary><span class="qq">D2</span><span class="qtext">You mentioned mentoring juniors — what did that actually involve?</span><span class="rev">reveal ▸</span></summary>
+        <div class="ans"><span class="alab">Answer</span><p>[Fill in a specific example: pairing on a real Kubernetes/Terraform task, reviewing a junior's PRs with real feedback, walking someone through the on-call process for the first time. A concrete story here is far stronger than "I mentored juniors" as a bare claim.]</p></div>
+      </details>
+      <details class="iq"><summary><span class="qq">D3</span><span class="qtext">Which of the ~10 Grafana dashboards do you personally look at most, and why?</span><span class="rev">reveal ▸</span></summary>
+        <div class="ans"><span class="alab">Answer</span><p>[Fill in: which dashboard(s) you actually built or relied on most — a cluster health overview, a specific service's error-rate/latency panel, a cost dashboard. Being able to name one specifically, rather than speaking only in the abstract about "the dashboards," is what makes this claim credible.]</p></div>
+      </details>
+      <details class="iq"><summary><span class="qq">D4</span><span class="qtext">How did you actually get incident detection from 30 minutes down to under 10?</span><span class="rev">reveal ▸</span></summary>
+        <div class="ans"><span class="alab">Answer</span><p>[Fill in the specific mechanism: was it adding alerting rules that hadn't existed before, building dashboards that made a slow manual check into an instant visual read, reducing alert noise so a real signal wasn't buried, or a combination? This is the single most interview-worthy number on your resume — have a real, specific story behind it, not just the number.]</p></div>
+      </details>
+      <details class="iq"><summary><span class="qq">D5</span><span class="qtext">What did the Python/Shell automation that cut manual effort by ~60% actually automate?</span><span class="rev">reveal ▸</span></summary>
+        <div class="ans"><span class="alab">Answer</span><p>[Fill in a specific script or category of scripts — an AWS resource audit/cleanup script, a repetitive JIRA/GitHub API task, a log-parsing or report-generation script. The Python chapter's Lab section on this site (requests/APIs, boto3) is a good prompt for the shape this likely took.]</p></div>
+      </details>
+      <details class="iq"><summary><span class="qq">D6</span><span class="qtext">Is this project a one-time build, or ongoing work?</span><span class="rev">reveal ▸</span></summary>
+        <div class="ans"><span class="alab">Answer</span><p>Ongoing — this is the core distinction from Part 2's mental model. The 30+ microservices, the pipelines, and the monitoring stack are live production systems under continuous maintenance and improvement, not a project that shipped once and stopped. New services onboard, existing ones evolve, and the SDLC keeps cycling for as long as they're in use.</p></div>
+      </details>
+    </section>
+
+    <div class="essentials closing"><div class="ess-h">🧠 On "project" vs "day-to-day" vs "a POC"</div><p>Keep these three cleanly separate in your head before you walk in. Your <strong>project</strong> answer is the technical shape of the systems you support. Your <strong>day-to-day</strong> answer is the operating rhythm — tickets, the five recurring areas, on-call, and that it's a cycle. A <strong>POC or something built from scratch</strong> question wants a different, bounded story with its own before/after — if you don't have a clean one from VOIS, it's fine to say your work has mostly been on live, shared production systems rather than greenfield builds, and pivot to the strongest example you do have.</p></div>
+
+    <!-- ============================================================ PART 4: VOIS-GROUNDED DEEP DIVE -->
+    <section class="lesson sec" id="vois" style="--accent:#e11d48">
+      <div class="lessonhead"><span class="lnum">④</span><h4>The hardened, VOIS-grounded deep-dive answers</h4></div>
+      <p class="lessonsub">A note on the bracket convention before you read further: every <code class="inl">[example: …]</code> or plain <code class="inl">[…]</code> below is a placeholder for a real detail from your actual VOIS work. Read through, and next to each one, write down (mentally or literally) what you actually did — then the answer becomes yours, not a script.</p>
+      <p><strong>The project, hardened against follow-ups:</strong> "I was a Cloud and DevOps Engineer at Vodafone Intelligent Solutions from November 2021 to September 2025, supporting a landscape of over 30 microservices for [your business unit]. Deployments went through CI/CD pipelines — [Jenkins / GitHub Actions, whichever you actually ran, and note if it was a mix] — into ArgoCD for GitOps-style delivery onto EKS, with Helm managing the Kubernetes manifests per service. Infrastructure was Terraform, modularised so a new environment went from taking days to taking hours; Ansible handled configuration management on top of that. Security was built into the pipeline itself with SonarQube for code quality and Trivy for container and dependency scanning, with secrets in [your actual secrets tool]. On the operations side, Prometheus, Grafana, Alertmanager, and Loki gave us around ten dashboards, and that observability investment is what took our incident detection time from roughly thirty minutes down to under ten. I also built reusable pipeline and Terraform templates so new services could largely self-serve their setup, and automated a lot of the recurring manual toil with Python and Shell, cutting that effort by around 60% on the tasks we targeted. We ran a 24/7 on-call rotation and held around 99.9% uptime across the services I supported."</p>
+      <p><strong>The day-to-day, hardened against follow-ups:</strong> "Day to day, my work comes out of JIRA — a mix of planned sprint work and reactive tickets, since a lot of what a platform-facing DevOps engineer does is interrupt-driven. It clusters into five recurring areas: Kubernetes, since I'm often the person other teams escalate to when a pod, deployment, or service is misbehaving; Terraform, extending and reviewing our infrastructure modules; the CI/CD pipelines and ArgoCD GitOps flow; Git, mostly PR review and managing release branches; and observability — tuning alerts, building dashboards, and covering on-call. None of this is a one-time build; it's a genuine cycle, where what the monitoring surfaces becomes tomorrow's ticket."</p>
+    </section>
+
+    <section class="sec" id="iq-vois" style="--accent:#be123c">
+      <details class="iq"><summary><span class="qq">P1</span><span class="qtext">Why ArgoCD specifically, rather than a simpler push-based deploy from the CI pipeline?</span><span class="rev">reveal ▸</span></summary>
+        <div class="ans"><span class="alab">Answer</span><p>GitOps with ArgoCD means the Git repo is the single source of truth for what should be running — ArgoCD continuously reconciles the cluster to match it, which catches drift (a manual <code class="inl">kubectl</code> change) automatically, and gives a clean audit trail of every deployment as a Git commit. [If your team had a specific reason it was chosen over a push-based approach — an audit/compliance need, self-healing, multi-cluster consistency — name it.]</p></div>
+      </details>
+      <details class="iq"><summary><span class="qq">P2</span><span class="qtext">How many environments does a typical service go through before production?</span><span class="rev">reveal ▸</span></summary>
+        <div class="ans"><span class="alab">Answer</span><p>[Fill in your actual environment chain — e.g. dev → staging/UAT → production — and whether promotion between them is automatic or requires manual approval at any stage.]</p></div>
+      </details>
+      <details class="iq"><summary><span class="qq">P3</span><span class="qtext">Are the Terraform modules organised per-service, per-environment, or some other split?</span><span class="rev">reveal ▸</span></summary>
+        <div class="ans"><span class="alab">Answer</span><p>[Fill in the actual module structure and state-isolation strategy you used — this maps directly to the Terraform chapter's state-splitting and blast-radius concepts on this site.]</p></div>
+      </details>
+      <details class="iq"><summary><span class="qq">P4</span><span class="qtext">What's actually in the ~10 Grafana dashboards?</span><span class="rev">reveal ▸</span></summary>
+        <div class="ans"><span class="alab">Answer</span><p>[Fill in: likely a cluster-health overview (node/pod resource usage), per-service error rate and latency panels, a cost dashboard, and an Alertmanager status view. Name at least one specifically and what it actually shows.]</p></div>
+      </details>
+      <details class="iq"><summary><span class="qq">P5</span><span class="qtext">How do SonarQube and Trivy fit into the pipeline — do they block a merge/deploy, or just report?</span><span class="rev">reveal ▸</span></summary>
+        <div class="ans"><span class="alab">Answer</span><p>[Fill in: did a failing quality gate or a critical CVE finding actually block the pipeline, or was it advisory/reported-only at the time? This is a genuine and common maturity distinction worth being honest about.]</p></div>
+      </details>
+      <details class="iq"><summary><span class="qq">P6</span><span class="qtext">What's an example of a service that was hard to migrate onto this platform, and why?</span><span class="rev">reveal ▸</span></summary>
+        <div class="ans"><span class="alab">Answer</span><p>[Fill in a real example if you have one — a stateful service, one with an unusual dependency, or one whose team needed convincing. Use the War Stories templates in Part 5 to build this into a full Situation → Action → Tool → Outcome story.]</p></div>
+      </details>
+      <details class="iq"><summary><span class="qq">D1</span><span class="qtext">Walk me through what happens from the moment an Alertmanager alert fires.</span><span class="rev">reveal ▸</span></summary>
+        <div class="ans"><span class="alab">Answer</span><p>[Fill in: does it route to Slack/Teams, page via PagerDuty/Opsgenie, or both depending on severity? Who's expected to acknowledge it, and within what time? This is exactly the kind of detail a real practitioner has and a memorised answer doesn't.]</p></div>
+      </details>
+      <details class="iq"><summary><span class="qq">D2</span><span class="qtext">When another team escalates a Kubernetes issue to you, what does that conversation actually look like?</span><span class="rev">reveal ▸</span></summary>
+        <div class="ans"><span class="alab">Answer</span><p>[Fill in a real example — a crash-looping pod, a service that couldn't reach another service, a resource-limit issue. Walk through your actual diagnostic steps: <code class="inl">kubectl describe</code>/<code class="inl">logs</code>, checking recent deployments, checking resource quotas.]</p></div>
+      </details>
+      <details class="iq"><summary><span class="qq">D3</span><span class="qtext">How do you decide what to automate with Python/Shell versus what stays manual?</span><span class="rev">reveal ▸</span></summary>
+        <div class="ans"><span class="alab">Answer</span><p>[Fill in your actual rule of thumb — likely: anything repetitive, error-prone by hand, or blocking someone regularly. Name one specific script you wrote and what triggered the decision to automate it.]</p></div>
+      </details>
+      <details class="iq"><summary><span class="qq">D4</span><span class="qtext">How do you keep the reusable pipeline/Terraform templates from drifting out of date as the platform evolves?</span><span class="rev">reveal ▸</span></summary>
+        <div class="ans"><span class="alab">Answer</span><p>[Fill in: was there a versioning scheme for the templates, a deprecation/migration process when they changed, or a more ad hoc update-and-notify approach? This maps to the Kubernetes/Docker chapters' golden-image and template-drift concepts.]</p></div>
+      </details>
+      <details class="iq"><summary><span class="qq">D5</span><span class="qtext">What's the split between time spent building new things versus keeping existing things running?</span><span class="rev">reveal ▸</span></summary>
+        <div class="ans"><span class="alab">Answer</span><p>[Fill in your honest estimate — a DevOps/platform role supporting 30+ live services is typically weighted toward keeping things running and improving, not constant greenfield building. Being honest about this ratio is more credible than implying it's mostly new development.]</p></div>
+      </details>
+      <details class="iq"><summary><span class="qq">D6</span><span class="qtext">What would you say is the single hardest part of supporting 30+ microservices as opposed to just one or two?</span><span class="rev">reveal ▸</span></summary>
+        <div class="ans"><span class="alab">Answer</span><p>[Fill in your real answer — likely something about consistency at scale (why the reusable templates existed in the first place), or the cognitive load of context-switching between different teams' issues, or coordinating changes that touch shared infrastructure across many services.]</p></div>
+      </details>
+    </section>
+
+    <!-- ============================================================ PART 5: WAR STORY BANK -->
+    <section class="lesson sec" id="warstories" style="--accent:#e11d48">
+      <div class="lessonhead"><span class="lnum">⑤</span><h4>Your real war-story bank</h4></div>
+      <p class="lessonsub">4–5 true stories in a Situation → your action → tool → measured outcome shape, so you have proof, not polish. Fill in each one with something that actually happened — these are templates, not answers.</p>
+      <div class="note"><b>War story 1 — an incident</b><br><strong>Situation:</strong> [A real production incident you were involved in — an outage, a failed deployment, a resource exhaustion event.]<br><strong>What you did:</strong> [Your specific actions — what you checked first, what you found, what you changed.]<br><strong>Tool:</strong> [kubectl, Grafana/Prometheus, CloudWatch, whatever you actually used.]<br><strong>Measured outcome:</strong> [Time to resolution, whether it fed into a postmortem, what changed afterward to prevent a repeat.]</div>
+      <div class="note"><b>War story 2 — a cost or efficiency win</b><br><strong>Situation:</strong> [The AWS cost cleanup work, or the environment-setup-time reduction, or the ~60% manual-effort cut — pick the one you remember most concretely.]<br><strong>What you did:</strong> [The specific steps — an audit, a Terraform module rewrite, a script.]<br><strong>Tool:</strong> [Terraform, AWS Cost Explorer, Python/boto3, whichever applies.]<br><strong>Measured outcome:</strong> [The actual number — days-to-hours, the 60% figure, or a cost figure if you have one.]</div>
+      <div class="note"><b>War story 3 — a mentoring or cross-team moment</b><br><strong>Situation:</strong> [A junior engineer you helped, or a development team you unblocked on a Kubernetes/Terraform issue.]<br><strong>What you did:</strong> [Specifically what you explained or paired on.]<br><strong>Tool:</strong> [Whatever the technical context was.]<br><strong>Measured outcome:</strong> [Did they become able to handle it independently afterward? Did it become a documented runbook for the wider team?]</div>
+      <div class="note"><b>War story 4 — a disaster or near-miss (the "biggest mistake" question)</b><br><strong>Situation:</strong> [A real mistake or close call — a bad deployment, a Terraform apply that did something unexpected, a misconfigured alert that caused noise or silence.]<br><strong>What you did:</strong> [How you recovered, and crucially, what you did afterward — a regression test, a new safeguard, a process change.]<br><strong>Tool:</strong> [Whatever was involved.]<br><strong>Measured outcome:</strong> [The fact that it didn't recur, or a concrete process/tooling change that resulted.]</div>
+      <div class="note"><b>War story 5 — a platform/template you built for others</b><br><strong>Situation:</strong> [The reusable pipeline or Terraform template work — what problem existed before it (every team building their own pipeline from scratch, inconsistent setups).]<br><strong>What you did:</strong> [What the template actually standardised, and how a new service adopted it.]<br><strong>Tool:</strong> [Terraform modules, a pipeline template repo, Helm chart templates.]<br><strong>Measured outcome:</strong> [How many services adopted it, or the setup-time reduction from days to hours.]</div>
+    </section>
+
+    <!-- ============================================================ PART 6: MAPPING YOUR EXPERIENCE TO COURSE CONCEPTS -->
+    <section class="lesson sec" id="mapping" style="--accent:#e11d48">
+      <div class="lessonhead"><span class="lnum">⑥</span><h4>Mapping your real 5 years onto this course's concepts</h4></div>
+      <p class="lessonsub">So "I know what a canary is" becomes "here's a canary I ran and what broke." Fill in the right-hand column with your own recalled specifics.</p>
+      <table class="tbl">
+        <tr><th>Course concept</th><th>Your real version (fill in)</th></tr>
+        <tr><td><strong>GitOps / ArgoCD sync</strong></td><td>[A time a manual cluster change drifted from Git and ArgoCD corrected it, or a sync failure you had to debug.]</td></tr>
+        <tr><td><strong>Terraform state &amp; blast radius</strong></td><td>[How your modules were split per-service/per-environment, and any state issue (lock, drift, a risky apply) you handled.]</td></tr>
+        <tr><td><strong>Kubernetes debugging (crash-loop, OOM, pending pod)</strong></td><td>[A specific pod/deployment issue you diagnosed for another team, and the actual root cause.]</td></tr>
+        <tr><td><strong>CI/CD pipeline design</strong></td><td>[The stages your Jenkins/GitHub Actions pipeline actually ran — build, scan, test, deploy — and any change you made to it.]</td></tr>
+        <tr><td><strong>Observability (alert fatigue, silent scrape failure, dashboards)</strong></td><td>[Any alert you had to tune down, or a dashboard you built that changed how fast an issue was caught.]</td></tr>
+        <tr><td><strong>Security scanning (SonarQube/Trivy) in the pipeline</strong></td><td>[A real finding one of these caught before it reached production, if you recall one.]</td></tr>
+        <tr><td><strong>Project management / JIRA workflow</strong></td><td>[Your team's actual sprint/Kanban rhythm, story-point sizing, and how on-call tickets fit into it.]</td></tr>
+      </table>
+    </section>
+
+    <!-- ============================================================ PART 7: MESSY QUESTIONS -->
+    <section class="lesson sec" id="messy" style="--accent:#e11d48">
+      <div class="lessonhead"><span class="lnum">⑦</span><h4>The messy questions — disaster sprint, biggest mistake, and other curveballs</h4></div>
+      <p class="lessonsub">Answered with your real stories from Part 5, not a script. The framework below is just the shape — the content has to be genuinely yours.</p>
+      <p><strong>"Tell me about your biggest production mistake."</strong> Framework: what happened (briefly, own it directly, no deflecting) → how you triaged/mitigated it in the moment → the root cause once you had time to look → what changed afterward (a test, a safeguard, a process) so it can't recur. Use War Story 4.</p>
+      <p><strong>"Tell me about a time a sprint or deadline completely fell apart."</strong> Framework: what caused it to fall apart (be honest — scope creep, a hidden dependency, an underestimate) → how you and the team responded in real time → what the outcome actually was, including if it wasn't a clean save → what you'd do differently. This is one of the few questions where admitting a genuinely imperfect outcome, handled well, lands better than a suspiciously tidy success story.</p>
+      <p><strong>"Tell me about a time you disagreed with a technical decision."</strong> Framework: the decision and why you disagreed → how you raised it (constructively, with evidence, not just an opinion) → the actual outcome, whether you were overruled or you changed the direction → what you learned either way.</p>
+      <p><strong>"What's something you'd do differently if you started this project again?"</strong> Framework: a genuine, specific thing — not a rehearsed non-answer like "nothing, it all went great." [Fill in something real — perhaps introducing the reusable templates earlier, or building the observability stack before it was needed reactively.]</p>
+      <p><strong>"How do you handle being paged at 3am for something that turns out to be nothing?"</strong> Framework: acknowledge the reality of on-call directly, describe your actual triage process (confirm it's really nothing, don't just dismiss an alert), and connect it back to the alert-fatigue material — a false alarm is itself useful signal about an alert that needs tuning, not just an annoyance to shrug off.</p>
+    </section>
+
+    <div class="essentials closing"><div class="ess-h">📌 Still pending</div><p>The resume duties-to-outcomes rewrite pass (turning each resume bullet from a duty into an outcome-with-a-metric) is still outstanding — it needs your actual resume text pasted in to work from, since it's a line-by-line edit, not something to template here. The 4 career-highlight bullets already have strong metrics (days→hours, 30min→&lt;10min, ~99.9% uptime, ~60% effort cut); the goal of that pass is bringing the same discipline to the 12 EXPERIENCE bullets under VOIS.</p></div>
+
+    <div class="foot"><b>Current Project &amp; Day-to-Day — Interview Prep.</b> Built from the day-to-day, explain-your-project, and JIRA/Agile course videos, then hardened with VOIS-grounded specifics, a war-story bank, a concept-mapping table, and messy-question frameworks — for rehearsal and muscle-memory reactivation of real experience, not fabrication. <a href="index.html" style="color:#6366f1;font-weight:600">← All chapters</a></div>
+  </main>
+</div>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Config Mgmt &amp; Ansible — DevOps Zero → Hero (Day 14·15) · Theory · Lab · Interview · Drills</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body data-chapter="config-mgmt">
+<div class="wrap">
+  <aside class="rail"><!-- sidebar rendered by app.js --></aside>
+  <main class="main">
+
+    <div class="crumb" style="--accent:#ee0000"><a href="index.html">Home</a><span class="sep">›</span><span>Source &amp; delivery</span><span class="sep">›</span><strong>Config Mgmt &amp; Ansible</strong></div>
+
+    <header class="hero" style="background:radial-gradient(1200px 300px at 0% -20%,#7a1010 0%,transparent 60%),linear-gradient(120deg,#2a0808,#3a0c0c 55%,#1a0606)">
+      <div class="eyebrow">Day 14 · 15 — managing the configuration of a whole fleet</div>
+      <h2>Configuration Management &amp; Ansible</h2>
+      <p>A DevOps engineer rarely manages one server — they manage hundreds or thousands, and every one of them needs the same patches, packages, and settings. Doing that by hand, or with fragile per-server scripts, does not scale. This chapter rebuilds Days 14 and 15 into a workshop: first you understand what configuration management is and why Ansible became the tool everyone uses, then you get hands-on installing Ansible and writing your first playbooks and roles, then you get quizzed the way an interviewer would, and finally you face the senior scenarios of running config management on a real fleet.</p>
+      <div class="flow"><span>① Theory</span><i>→</i><span>② Lab</span><i>→</i><span>③ Interview Q&amp;A</span><i>→</i><span>④ Scenario drills</span></div>
+      <div class="srcvids">
+        <span class="v"><b>Day 14</b> · Configuration Management — Puppet vs Ansible</span>
+        <span class="v"><b>Day 15</b> · Ansible Zero-to-Hero — the hands-on project</span>
+      </div>
+    </header>
+
+    <div class="essentials"><div class="ess-h">⚡ The whole of configuration management in one mental model</div>
+      <p><strong>Configuration management is how a DevOps engineer manages the configuration of many servers at once.</strong> Every server needs the same things kept in order — upgrades, security patches, default installations — and once you have hundreds or thousands of them, logging into each one is impossible. Configuration management is the discipline of describing the state you want and having a tool enforce it across the whole fleet. The tool almost everyone uses is <strong>Ansible</strong>, because it is <strong>agentless</strong> (nothing to install on the servers you manage), <strong>push-based</strong> (you run it from one place and it configures everything), and written in plain <strong>YAML</strong>.</p>
+      <div class="fig dark"><svg viewBox="0 0 760 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="One control node pushing the desired configuration to a fleet of servers">
+        <defs><marker id="ah" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0 0 L7 3 L0 6 Z" fill="#fca5a5"/></marker></defs>
+        <g font-family="Inter,sans-serif">
+          <rect x="30" y="76" width="160" height="56" rx="10" fill="#2a0c0c" stroke="#7a1a1a"/><text x="110" y="100" text-anchor="middle" font-size="12.5" font-weight="700" fill="#fecaca">Control node</text><text x="110" y="118" text-anchor="middle" font-size="10" fill="#fca5a5">your laptop + a playbook</text>
+          <rect x="500" y="20" width="230" height="30" rx="7" fill="#1a0808" stroke="#5a1414"/><text x="615" y="40" text-anchor="middle" font-size="10.5" fill="#fecaca">server (Ubuntu)</text>
+          <rect x="500" y="62" width="230" height="30" rx="7" fill="#1a0808" stroke="#5a1414"/><text x="615" y="82" text-anchor="middle" font-size="10.5" fill="#fecaca">server (CentOS)</text>
+          <rect x="500" y="104" width="230" height="30" rx="7" fill="#1a0808" stroke="#5a1414"/><text x="615" y="124" text-anchor="middle" font-size="10.5" fill="#fecaca">server (Windows)</text>
+          <rect x="500" y="146" width="230" height="30" rx="7" fill="#1a0808" stroke="#5a1414"/><text x="615" y="166" text-anchor="middle" font-size="10.5" fill="#fca5a5">… hundreds more</text>
+          <line class="flow-line" x1="192" y1="95" x2="496" y2="35" stroke="#fca5a5" stroke-width="2" marker-end="url(#ah)"/>
+          <line class="flow-line" x1="192" y1="100" x2="496" y2="77" stroke="#fca5a5" stroke-width="2" marker-end="url(#ah)"/>
+          <line class="flow-line" x1="192" y1="108" x2="496" y2="119" stroke="#fca5a5" stroke-width="2" marker-end="url(#ah)"/>
+          <line class="flow-line" x1="192" y1="113" x2="496" y2="161" stroke="#fca5a5" stroke-width="2" marker-end="url(#ah)"/>
+          <text x="345" y="150" text-anchor="middle" font-size="10" fill="#e79a9a">push over SSH · no agent on the servers</text>
+        </g>
+      </svg><div class="figcap"><b>Push, agentless, from one place.</b> You describe the desired state once, and Ansible pushes it out over SSH to every server in your inventory — nothing needs to be installed on the servers themselves.</div></div>
+      <p>Four ideas carry the chapter: <strong>(1)</strong> the problem is <em>scale</em> — the same task on thousands of heterogeneous servers; <strong>(2)</strong> Ansible connects <strong>agentlessly over SSH</strong> (or WinRM for Windows), so a server just needs to be reachable and set up for passwordless login; <strong>(3)</strong> you list the servers in an <strong>inventory</strong> file and describe the work in a <strong>playbook</strong> written in YAML; and <strong>(4)</strong> for anything complex you organise the playbook into a <strong>role</strong>, which is just a tidy folder structure for a big playbook.</p>
+    </div>
+
+    <div class="toc" style="--accent:#ee0000">
+      <div class="toch">On this page</div>
+      <ol>
+        <li><a href="#theory"><b>① Theory</b> — the concepts (Day 14)</a></li>
+        <li><a href="#t1">What configuration management is, and why it exists</a></li>
+        <li><a href="#t2">The tools, and why Ansible won</a></li>
+        <li><a href="#t3">Why Ansible — the four differences (and the trade-offs)</a></li>
+        <li><a href="#lab"><b>② Lab</b> — hands-on with Ansible</a></li>
+        <li><a href="#lab1">Install Ansible and set up passwordless SSH</a></li>
+        <li><a href="#lab2">The inventory file, and ad-hoc commands</a></li>
+        <li><a href="#lab3">Your first playbook</a></li>
+        <li><a href="#lab4">Roles — structuring a complex playbook</a></li>
+        <li><a href="#interview"><b>③ Interview Q&amp;A</b> — the questions the instructor flags</a></li>
+        <li><a href="#drills"><b>④ Scenario drills</b> — config management on a real fleet (10)</a></li>
+      </ol>
+    </div>
+
+    <!-- ============================================================ PHASE 1: THEORY -->
+    <div class="phase theory" id="theory">
+      <div class="pbig">01</div>
+      <div class="pmeta"><div class="pk">Phase 1 · Theory</div><h3>What configuration management is, and why Ansible</h3>
+      <p>First the problem configuration management solves, then the tools that solve it, and then the four architectural reasons Ansible became the one everyone reaches for.</p></div>
+    </div>
+
+    <!-- T1 -->
+    <section class="lesson sec" id="t1" style="--accent:#ee0000">
+      <div class="lessonhead"><span class="lnum">T1</span><h4>What configuration management is, and why it exists</h4></div>
+      <p class="lessonsub">Configuration management is one of the simpler topics in DevOps, and the clearest way to understand it is to watch the problem it grew out of.</p>
+      <p>Imagine you are a system administrator, back before DevOps existed as a role, and your company runs its own on-premises data centre with a hundred servers — say fifty on one Linux distribution, twenty-five on CentOS, and twenty-five on Ubuntu. Managing your own servers means constantly doing three kinds of work: applying <strong>upgrades</strong> (when CentOS moves from version 9 to 10, you have to move with it), applying <strong>security patches</strong> (just as you update your phone the moment a vulnerability is found), and making <strong>default installations</strong> (perhaps every server should come with Git or a database already installed, to save the developers time).</p>
+      <p>Now do those three things across a hundred servers with a team of five. Each person gets twenty servers, and they have to log into every one — over SSH for Linux, or a remote protocol for Windows — and run the commands by hand. The old way to cope was to write <strong>scripts</strong>: a shell script for Linux, a PowerShell script for Windows. But this was fragile for two reasons. First, you had to write in several languages. Second, and worse, the commands differed by distribution — a script written for Ubuntu might not work on CentOS or Alpine — so a script could work on some servers and silently fail on others.</p>
+      <div class="fig"><svg viewBox="0 0 720 190" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="The scaling problem: one admin, many heterogeneous servers, fragile per-server scripts">
+        <g font-family="Inter,sans-serif">
+          <rect x="30" y="76" width="130" height="44" rx="9" fill="#fef2f2" stroke="#ef4444"/><text x="95" y="98" text-anchor="middle" font-size="12" font-weight="700" fill="#991b1b">System admin</text><text x="95" y="113" text-anchor="middle" font-size="9.5" fill="#dc2626">+ fragile scripts</text>
+          <g font-size="9.5" fill="#334155">
+            <rect x="300" y="18" width="130" height="26" rx="6" fill="#fff" stroke="#fca5a5"/><text x="365" y="35" text-anchor="middle">Ubuntu · apt</text>
+            <rect x="300" y="52" width="130" height="26" rx="6" fill="#fff" stroke="#fca5a5"/><text x="365" y="69" text-anchor="middle">CentOS · yum</text>
+            <rect x="300" y="86" width="130" height="26" rx="6" fill="#fff" stroke="#fca5a5"/><text x="365" y="103" text-anchor="middle">Alpine · apk</text>
+            <rect x="300" y="120" width="130" height="26" rx="6" fill="#fff" stroke="#fca5a5"/><text x="365" y="137" text-anchor="middle">Windows · PowerShell</text>
+            <rect x="300" y="154" width="130" height="26" rx="6" fill="#fef2f2" stroke="#fca5a5"/><text x="365" y="171" text-anchor="middle">… × thousands</text>
+          </g>
+          <text x="550" y="90" text-anchor="middle" font-size="11" font-weight="700" fill="#991b1b">upgrades</text><text x="550" y="108" text-anchor="middle" font-size="11" font-weight="700" fill="#991b1b">patches</text><text x="550" y="126" text-anchor="middle" font-size="11" font-weight="700" fill="#991b1b">installs</text>
+          <line x1="160" y1="90" x2="298" y2="31" stroke="#fca5a5" stroke-width="1.2"/><line x1="160" y1="95" x2="298" y2="65" stroke="#fca5a5" stroke-width="1.2"/><line x1="160" y1="100" x2="298" y2="99" stroke="#fca5a5" stroke-width="1.2"/><line x1="160" y1="105" x2="298" y2="133" stroke="#fca5a5" stroke-width="1.2"/>
+        </g>
+      </svg><div class="figcap"><b>The problem.</b> The same handful of tasks, across many servers running different distributions, each needing slightly different commands — and per-server scripts that break as distributions and commands change.</div></div>
+      <p>Then the cloud made it far worse. With the move to the cloud and to microservices, the <strong>number of servers went up roughly tenfold</strong> while each server got smaller. Where you once had a thousand large servers, you now had ten thousand small ones. The by-hand-and-scripts approach that was already painful became impossible. That pressure created the need for a proper solution — a <strong>concept</strong>, configuration management, and the tools that implement it. Configuration management aims to solve exactly one thing: <strong>managing the configuration of many servers at once</strong>, which every organisation of any size now needs.</p>
+    </section>
+
+    <!-- T2 -->
+    <section class="lesson sec" id="t2" style="--accent:#ee0000">
+      <div class="lessonhead"><span class="lnum">T2</span><h4>The tools, and why Ansible won</h4></div>
+      <p class="lessonsub">Configuration management has several well-known tools. Knowing which one to learn — and why — is the practical question.</p>
+      <p>The popular tools are <strong>Puppet</strong>, <strong>Chef</strong>, <strong>Ansible</strong>, and <strong>Salt</strong>. Historically, engineers started with Puppet or Chef, which were the first to implement configuration management six or seven years ago. Ansible gained real popularity around 2016 and 2017, and after <strong>Red Hat</strong> acquired it (around 2018–2019) it has been constantly developed — which is why you often hear it called Red Hat Ansible. Today it is the go-to tool for configuration management.</p>
+      <p>So the practical advice is simple: <strong>if you are confused about where to start, start with Ansible.</strong> There is roughly a 90% chance that the organisation you join will be using it. That is not to say nobody uses Puppet, Chef, or Salt — some do — but the majority use Ansible, and it is always better to learn the tool that is most widely used, because that is what gets you into a job. Once you know Ansible well, and if you still have time, you can look at the others.</p>
+    </section>
+
+    <!-- T3 -->
+    <section class="lesson sec" id="t3" style="--accent:#ee0000">
+      <div class="lessonhead"><span class="lnum">T3</span><h4>Why Ansible — the four differences (and the trade-offs)</h4></div>
+      <p class="lessonsub">"When you have Puppet and Ansible, why did you choose Ansible?" is one of the most common interview questions. The answer is four architectural differences, and you should be able to give all four.</p>
+      <div class="fig"><svg viewBox="0 0 720 210" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Puppet pull and master-slave versus Ansible push and agentless">
+        <g font-family="Inter,sans-serif">
+          <text x="180" y="24" text-anchor="middle" font-size="12" font-weight="700" fill="#6b21a8">Puppet — pull, master–slave</text>
+          <rect x="120" y="36" width="120" height="34" rx="8" fill="#faf5ff" stroke="#9333ea"/><text x="180" y="57" text-anchor="middle" font-size="11" font-weight="700" fill="#6b21a8">Puppet master</text>
+          <rect x="40" y="110" width="90" height="30" rx="7" fill="#fff" stroke="#c4b5fd"/><text x="85" y="130" text-anchor="middle" font-size="9" fill="#6b21a8">agent (slave)</text>
+          <rect x="140" y="110" width="90" height="30" rx="7" fill="#fff" stroke="#c4b5fd"/><text x="185" y="130" text-anchor="middle" font-size="9" fill="#6b21a8">agent (slave)</text>
+          <rect x="240" y="110" width="90" height="30" rx="7" fill="#fff" stroke="#c4b5fd"/><text x="285" y="130" text-anchor="middle" font-size="9" fill="#6b21a8">agent (slave)</text>
+          <line x1="85" y1="108" x2="160" y2="72" stroke="#9333ea" stroke-width="1.3"/><line x1="185" y1="108" x2="185" y2="72" stroke="#9333ea" stroke-width="1.3"/><line x1="285" y1="108" x2="205" y2="72" stroke="#9333ea" stroke-width="1.3"/>
+          <text x="185" y="162" text-anchor="middle" font-size="9.5" fill="#7e22ce">agents pull config · each needs setup + certs</text>
+          <line x1="360" y1="30" x2="360" y2="185" stroke="#e2e8f0" stroke-dasharray="4 4"/>
+          <text x="540" y="24" text-anchor="middle" font-size="12" font-weight="700" fill="#991b1b">Ansible — push, agentless</text>
+          <rect x="480" y="36" width="120" height="34" rx="8" fill="#fef2f2" stroke="#ef4444"/><text x="540" y="57" text-anchor="middle" font-size="11" font-weight="700" fill="#991b1b">Control node</text>
+          <rect x="400" y="110" width="90" height="30" rx="7" fill="#fff" stroke="#fca5a5"/><text x="445" y="130" text-anchor="middle" font-size="9" fill="#991b1b">server (no agent)</text>
+          <rect x="500" y="110" width="90" height="30" rx="7" fill="#fff" stroke="#fca5a5"/><text x="545" y="130" text-anchor="middle" font-size="9" fill="#991b1b">server (no agent)</text>
+          <rect x="600" y="110" width="90" height="30" rx="7" fill="#fff" stroke="#fca5a5"/><text x="645" y="130" text-anchor="middle" font-size="9" fill="#991b1b">server (no agent)</text>
+          <line x1="520" y1="72" x2="445" y2="108" stroke="#ef4444" stroke-width="1.3" marker-end=""/><line x1="540" y1="72" x2="545" y2="108" stroke="#ef4444" stroke-width="1.3"/><line x1="560" y1="72" x2="645" y2="108" stroke="#ef4444" stroke-width="1.3"/>
+          <text x="545" y="162" text-anchor="middle" font-size="9.5" fill="#dc2626">control pushes over SSH · just an IP in the inventory</text>
+        </g>
+      </svg><div class="figcap"><b>The core contrast.</b> Puppet pulls config down to agents you must install and register on each server; Ansible pushes config out from one control node over SSH, with nothing installed on the servers.</div></div>
+      <ol>
+        <li><strong>Push versus pull.</strong> Puppet uses a <em>pull</em> model; Ansible uses a <em>push</em> model. With Ansible, you write your playbook in one place — your laptop or a control node — and push the configuration out to all your servers by running the playbook. You do not wait for each server to pull the config down for itself.</li>
+        <li><strong>Agentless versus master–slave.</strong> This is the big one. Puppet follows a master–slave (master–agent) architecture: you install an agent on every server and register it with the master using tokens and certificates before anything works. Ansible is <strong>agentless</strong> — there is nothing to install on the servers you manage. You simply list their IP addresses (or DNS names) in an <strong>inventory</strong> file and set up <strong>passwordless SSH</strong> authentication, and Ansible can configure them. This matters enormously in a dynamic environment where servers are created and torn down constantly: to manage a new server you just add its IP to the inventory. Ansible can even do this automatically with <strong>dynamic inventory</strong>, where it auto-detects new servers (for example, any new EC2 instance in a given region) and manages them without you editing the file at all.</li>
+        <li><strong>Good support for both Windows and Linux.</strong> Ansible has strong modules for both operating systems, and especially after Red Hat's involvement its Windows support improved a lot — which is often trickier with Puppet or Chef. Its Linux support is excellent.</li>
+        <li><strong>Simple YAML instead of a custom language.</strong> Puppet makes you learn its own Puppet language. Ansible playbooks are written in plain <strong>YAML</strong> — a format engineers already know from Kubernetes and elsewhere — so there is no new language to learn.</li>
+      </ol>
+      <div class="note"><strong>Be honest about the trade-offs, and know the extensibility story.</strong> Ansible is not perfect. Windows configuration is still not as smooth as Linux; its <strong>debugging</strong> logs are not always easy to read; and it can hit <strong>performance</strong> limits when running in parallel across very large fleets. On the plus side, Ansible is written in <strong>Python</strong>, so you can write your own <strong>custom modules</strong> — for example, to manage your organisation's load balancer — and share them with the community through <strong>Ansible Galaxy</strong>, from which others can pull and reuse them. Being able to name both the weaknesses and the extensibility is what makes your "why Ansible" answer sound like real experience rather than a memorised list.</div>
+    </section>
+
+    <!-- ============================================================ PHASE 2: LAB -->
+    <div class="phase lab" id="lab">
+      <div class="pbig">02</div>
+      <div class="pmeta"><div class="pk">Phase 2 · Lab</div><h3>Hands-on — from installing Ansible to writing roles</h3>
+      <p>Install Ansible and wire up the passwordless SSH it depends on, list your servers in an inventory, run ad-hoc commands, write your first playbook, and finally structure a complex playbook into a role. Two small Ubuntu servers are all you need.</p></div>
+    </div>
+
+    <!-- L1 -->
+    <section class="lesson sec" id="lab1" style="--accent:#ee0000">
+      <div class="lessonhead"><span class="lnum">L1</span><h4>Install Ansible and set up passwordless SSH</h4></div>
+      <p>You need two servers: a <strong>control node</strong> (where Ansible runs) and at least one <strong>target</strong> to configure. Create two Ubuntu EC2 instances, and on the control node install Ansible with the package manager — it is the easiest route, and it adds Ansible to your path automatically:</p>
+      <pre><span class="lang">bash</span><code>sudo apt update
+sudo apt install -y ansible        <span class="c-cmt"># on Mac: brew install ansible · on Windows: choco install ansible</span>
+ansible --version                  <span class="c-cmt"># verify it installed (under the hood it uses Python + pip)</span></code></pre>
+      <p>The one prerequisite Ansible has is <strong>passwordless SSH</strong>: the control node must be able to connect to the targets without a password. Set that up by generating a key pair on the control node and copying its <em>public</em> key into the target's authorized keys. The private key never leaves the control node and is never shared:</p>
+      <pre><span class="lang">bash</span><code><span class="c-cmt"># on the CONTROL node</span>
+ssh-keygen                         <span class="c-cmt"># creates ~/.ssh/id_rsa (private) and id_rsa.pub (public)</span>
+cat ~/.ssh/id_rsa.pub              <span class="c-cmt"># copy this public key</span>
+
+<span class="c-cmt"># on the TARGET server, paste the control node's public key into:</span>
+~/.ssh/authorized_keys             <span class="c-cmt"># (ssh-copy-id &lt;target-ip&gt; does this in one step, when it has permission)</span>
+
+<span class="c-cmt"># back on the control node — now this connects with no password:</span>
+ssh &lt;target-private-ip&gt;</code></pre>
+      <p>Once <code class="inl">ssh &lt;target&gt;</code> connects without asking for a password, the prerequisite is met — for that server and any others you add the public key to. Use the <strong>private</strong> IP when the servers are in the same VPC. In one line: passwordless SSH is just <em>the control node's public key sitting in the target's</em> <code class="inl">authorized_keys</code>.</p>
+    </section>
+
+    <!-- L2 -->
+    <section class="lesson sec" id="lab2" style="--accent:#ee0000">
+      <div class="lessonhead"><span class="lnum">L2</span><h4>The inventory file, and ad-hoc commands</h4></div>
+      <p>The <strong>inventory</strong> file is where you list the servers Ansible manages. Ansible's default is <code class="inl">/etc/ansible/hosts</code>, but it is more convenient to keep your own file next to your playbooks and point Ansible at it. You can also <strong>group</strong> servers with bracket headers and target a group by name:</p>
+      <pre><span class="lang">text</span><code><span class="c-cmt"># inventory</span>
+172.31.6.228
+
+[webservers]
+172.31.62.100
+
+[dbservers]
+172.31.62.200</code></pre>
+      <p>You do not always need a playbook. For a one-off task — "create a file on a hundred servers" — an <strong>ad-hoc command</strong> is simpler, exactly as you would run a single shell command rather than write a whole script. The form is <code class="inl">ansible -i &lt;inventory&gt; &lt;hosts&gt; -m &lt;module&gt; -a "&lt;args&gt;"</code>, where <code class="inl">-m</code> is the module and <code class="inl">-a</code> is its arguments:</p>
+      <pre><span class="lang">bash</span><code>ansible -i inventory all -m shell -a "touch devops-class"   <span class="c-cmt"># run on every host in the inventory</span>
+ansible -i inventory webservers -m shell -a "nproc"         <span class="c-cmt"># run only on the webservers group</span>
+ansible -i inventory all -m copy -a "src=./x dest=/tmp/x"   <span class="c-cmt"># modules other than shell, e.g. copy</span></code></pre>
+      <p>A yellow line means something <em>changed</em> and all is well; a red line means an error. Which module to use, and its arguments, you look up in the Ansible module documentation — there are thousands of modules and nobody memorises them all. The rule of thumb, and a common interview question, is: use an <strong>ad-hoc command</strong> for one or two tasks, and write a <strong>playbook</strong> when you have many.</p>
+    </section>
+
+    <!-- L3 -->
+    <section class="lesson sec" id="lab3" style="--accent:#ee0000">
+      <div class="lessonhead"><span class="lnum">L3</span><h4>Your first playbook</h4></div>
+      <p>A <strong>playbook</strong> is just an Ansible file — the equivalent of a shell script — written in YAML, used when you want to run several tasks. Here is one that installs and starts nginx:</p>
+      <div class="fig"><svg viewBox="0 0 720 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="The anatomy of an Ansible playbook">
+        <g font-family="Inter,sans-serif" font-size="10.5">
+          <rect x="120" y="20" width="480" height="26" rx="6" fill="#fef2f2" stroke="#ef4444"/><text x="135" y="37" fill="#991b1b" font-weight="700">name:</text><text x="200" y="37" fill="#b91c1c">what this play does</text>
+          <rect x="120" y="52" width="480" height="26" rx="6" fill="#fff7ed" stroke="#d97706"/><text x="135" y="69" fill="#92400e" font-weight="700">hosts: all</text><text x="260" y="69" fill="#b45309">which servers (from the inventory)</text>
+          <rect x="120" y="84" width="480" height="26" rx="6" fill="#fffbeb" stroke="#f59e0b"/><text x="135" y="101" fill="#92400e" font-weight="700">become: true</text><text x="270" y="101" fill="#b45309">run as root (like sudo)</text>
+          <rect x="120" y="116" width="480" height="70" rx="6" fill="#f0fdf4" stroke="#16a34a"/><text x="135" y="134" fill="#166534" font-weight="700">tasks:</text><text x="160" y="152" fill="#15803d">- name: install nginx → apt: {name: nginx, state: present}</text><text x="160" y="172" fill="#15803d">- name: start nginx → service: {name: nginx, state: started}</text>
+        </g>
+      </svg><div class="figcap"><b>The anatomy.</b> A play has a name, the hosts it targets, an optional become (run as root), and a list of tasks — each task using a module like <code class="inl">apt</code> or <code class="inl">service</code>.</div></div>
+      <pre><span class="lang">yaml</span><code>---
+- name: install and start nginx
+  hosts: all                       <span class="c-cmt"># every server in the inventory</span>
+  become: true                     <span class="c-cmt"># run as root, like sudo (package installs need it)</span>
+  tasks:
+    - name: install nginx
+      apt:                         <span class="c-cmt"># the apt module — equivalent to "shell: apt install nginx", but sturdier</span>
+        name: nginx
+        state: present             <span class="c-cmt"># present = installed</span>
+    - name: start nginx
+      service:                     <span class="c-cmt"># the service module</span>
+        name: nginx
+        state: started</code></pre>
+      <p>Run it with <strong><code class="inl">ansible-playbook</code></strong> (the <code class="inl">ansible</code> command runs ad-hoc commands; <code class="inl">ansible-playbook</code> runs playbook files):</p>
+      <pre><span class="lang">bash</span><code>ansible-playbook -i inventory first-playbook.yaml
+<span class="c-cmt"># the first task is always "Gathering Facts" — Ansible checks the auth and collects info about the target</span>
+ansible-playbook -i inventory first-playbook.yaml -vvv   <span class="c-cmt"># add -v / -vvv for verbose debug output</span></code></pre>
+      <p>Every playbook begins with a <strong>Gathering Facts</strong> step, where Ansible confirms it can authenticate and collects details about the target, before running your tasks. Two habits worth forming: prefer a purpose-built <strong>module</strong> (<code class="inl">apt</code>, <code class="inl">service</code>) over a raw <code class="inl">shell</code> command, because the module is more robust if the underlying command changes; and use <code class="inl">-vvv</code> when you want to see, step by step, exactly what Ansible is doing on the target — how it establishes the SSH connection, what it gathers, and the result of each task.</p>
+    </section>
+
+    <!-- L4 -->
+    <section class="lesson sec" id="lab4" style="--accent:#ee0000">
+      <div class="lessonhead"><span class="lnum">L4</span><h4>Roles — structuring a complex playbook</h4></div>
+      <p class="lessonsub">A two-task playbook fits in one file. A real one does not — and that is what roles are for.</p>
+      <p>Consider a realistic task: configure a Kubernetes cluster with Ansible, setting one server up as the master and two as workers. (In practice you would create the servers with <strong>Terraform</strong> — the right tool for provisioning infrastructure — and then configure them with Ansible.) A playbook like that has fifty or sixty tasks, plus variables, certificates, and secrets. Put all of that in one <code class="inl">playbook.yaml</code> and it becomes impossible to read. The answer is an <strong>Ansible role</strong>: an efficient, structured way to write a complex playbook. You create one with <code class="inl">ansible-galaxy</code>:</p>
+      <pre><span class="lang">bash</span><code>ansible-galaxy role init kubernetes    <span class="c-cmt"># scaffolds a folder of standard directories</span></code></pre>
+      <p>That scaffolds a tidy folder structure. Instead of one giant file, each concern lives in its own directory, and a small parent playbook simply names the hosts and points to the role:</p>
+      <div class="fig"><svg viewBox="0 0 720 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="The Ansible role directory structure">
+        <g font-family="Inter,sans-serif" font-size="10">
+          <text x="30" y="24" font-size="12" font-weight="700" fill="#991b1b">kubernetes/  (a role)</text>
+          <rect x="30" y="36" width="150" height="30" rx="6" fill="#f0fdf4" stroke="#16a34a"/><text x="40" y="55" fill="#166534"><tspan font-weight="700">tasks/</tspan> the steps</text>
+          <rect x="196" y="36" width="150" height="30" rx="6" fill="#eff6ff" stroke="#3b82f6"/><text x="206" y="55" fill="#1e40af"><tspan font-weight="700">handlers/</tspan> react to change</text>
+          <rect x="362" y="36" width="150" height="30" rx="6" fill="#faf5ff" stroke="#9333ea"/><text x="372" y="55" fill="#6b21a8"><tspan font-weight="700">templates/</tspan> Jinja2</text>
+          <rect x="528" y="36" width="160" height="30" rx="6" fill="#fff7ed" stroke="#d97706"/><text x="538" y="55" fill="#92400e"><tspan font-weight="700">files/</tspan> static files</text>
+          <rect x="30" y="78" width="150" height="30" rx="6" fill="#fffbeb" stroke="#f59e0b"/><text x="40" y="97" fill="#92400e"><tspan font-weight="700">vars/</tspan> variables</text>
+          <rect x="196" y="78" width="150" height="30" rx="6" fill="#fffbeb" stroke="#f59e0b"/><text x="206" y="97" fill="#92400e"><tspan font-weight="700">defaults/</tspan> default vars</text>
+          <rect x="362" y="78" width="150" height="30" rx="6" fill="#ecfeff" stroke="#0891b2"/><text x="372" y="97" fill="#155e75"><tspan font-weight="700">meta/</tspan> info + license</text>
+          <rect x="528" y="78" width="160" height="30" rx="6" fill="#f1f5f9" stroke="#64748b"/><text x="538" y="97" fill="#334155"><tspan font-weight="700">tests/</tspan> + README.md</text>
+          <text x="30" y="140" font-size="11" font-weight="700" fill="#334155">parent playbook (site.yml):</text>
+          <rect x="30" y="150" width="658" height="34" rx="6" fill="#fafafa" stroke="#cbd5e1"/><text x="45" y="171" fill="#475569" font-family="JetBrains Mono,monospace" font-size="10">- hosts: all &nbsp; roles: [ kubernetes ]   &nbsp; # the tasks now live inside the role, not here</text>
+        </g>
+      </svg><div class="figcap"><b>The role structure.</b> The tasks, handlers, templates, files, and variables each get their own directory, and the parent playbook just lists the hosts and the role to apply.</div></div>
+      <ul>
+        <li><strong>tasks/</strong> — the actual steps (what used to be the <code class="inl">tasks:</code> block in your single playbook).</li>
+        <li><strong>handlers/</strong> — actions triggered by a change, and a place to handle problems (for example, if nginx fails to start, notify someone or roll the change back).</li>
+        <li><strong>templates/</strong> — <strong>Jinja2</strong> templates for config files that need values filled in.</li>
+        <li><strong>files/</strong> — static files to copy to the targets, such as an <code class="inl">index.html</code> or a certificate.</li>
+        <li><strong>vars/</strong> and <strong>defaults/</strong> — variables, where <code class="inl">defaults/</code> holds the lowest-precedence values that can be overridden.</li>
+        <li><strong>meta/</strong> — metadata and licensing, used when you share the role via Ansible Galaxy; and <strong>tests/</strong> plus a <strong>README</strong>.</li>
+      </ul>
+      <p>The pattern to remember for interviews: you write simple things directly in a playbook, and when a playbook grows complex — many tasks, variables, certificates, secrets — you turn it into a <strong>role</strong> so it stays structured and readable, and can be shared through <strong>Ansible Galaxy</strong>.</p>
+    </section>
+
+    <!-- ============================================================ PHASE 3: INTERVIEW -->
+    <div class="phase interview" id="interview">
+      <div class="pbig">03</div>
+      <div class="pmeta"><div class="pk">Phase 3 · Interview Q&amp;A</div><h3>The configuration management &amp; Ansible questions you'll be asked</h3>
+      <p>These are the questions the instructor explicitly flags across Days 14 and 15, with answers built from his explanations. Answer each out loud, then reveal.</p></div>
+    </div>
+
+    <section class="sec" id="iq" style="--accent:#0e7490">
+      <details class="iq"><summary><span class="qq">Q1</span><span class="qtext">What is configuration management, and why is it needed?</span><span class="rev">reveal ▸</span></summary>
+        <div class="ans"><span class="alab">Answer</span><p>Configuration management is how a DevOps engineer manages the configuration of many servers at once — the upgrades, security patches, and default installations that every server needs. It exists because doing that by hand, or with per-server scripts, does not scale: an organisation has hundreds or thousands of servers, often on different operating systems, and the cloud and microservices pushed those numbers up roughly tenfold. Configuration management lets you describe the desired state once and enforce it across the whole fleet.</p></div>
+      </details>
+      <details class="iq"><summary><span class="qq">Q2</span><span class="qtext">Why did you choose Ansible over Puppet or Chef?</span><span class="rev">reveal ▸</span></summary>
+        <div class="ans"><span class="alab">Answer</span><p>Four reasons. It is <strong>push-based</strong> — I run a playbook from one control node and it configures everything, rather than each server pulling config down. It is <strong>agentless</strong> — nothing to install on the managed servers, unlike Puppet's master–slave model with agents, tokens, and certificates; I just list IPs in an inventory and set up passwordless SSH. It has <strong>strong support for both Windows and Linux</strong>. And playbooks are plain <strong>YAML</strong>, so there is no custom language to learn as there is with Puppet. It is also the tool roughly 90% of organisations use.</p></div>
+      </details>
+      <details class="iq"><summary><span class="qq">Q3</span><span class="qtext">Is Ansible push or pull?</span><span class="rev">reveal ▸</span></summary>
+        <div class="ans"><span class="alab">Answer</span><p>Ansible is <strong>push</strong>. You write the playbook on a control node and push the configuration out to all the target servers when you run it. Puppet, by contrast, is pull — the agents pull their configuration down from the master.</p></div>
+      </details>
+      <details class="iq"><summary><span class="qq">Q4</span><span class="qtext">What does "agentless" mean, and how does Ansible connect to the servers?</span><span class="rev">reveal ▸</span></summary>
+        <div class="ans"><span class="alab">Answer</span><p>Agentless means there is <strong>nothing to install on the servers you manage</strong> — no agent, no registration, no certificates. Ansible connects over <strong>SSH</strong> (or WinRM for Windows), so a target just needs to be reachable and set up for passwordless login. You list the targets in an inventory file, and Ansible pushes the configuration to them. This is a big advantage in a dynamic environment, because to manage a new server you only have to add its IP to the inventory.</p></div>
+      </details>
+      <details class="iq"><summary><span class="qq">Q5</span><span class="qtext">Does Ansible support Windows and Linux? What protocols does it use?</span><span class="rev">reveal ▸</span></summary>
+        <div class="ans"><span class="alab">Answer</span><p>It supports <strong>both</strong>. For Linux it connects over <strong>SSH</strong>, and for Windows it connects over <strong>WinRM</strong>. Its Linux support is excellent, and its Windows support is good — and improved a lot after Red Hat's involvement — though Windows configuration is still not quite as smooth as Linux.</p></div>
+      </details>
+      <details class="iq"><summary><span class="qq">Q6</span><span class="qtext">Does Ansible support all the cloud providers — AWS, Azure, GCP?</span><span class="rev">reveal ▸</span></summary>
+        <div class="ans"><span class="alab">Answer</span><p>This can sound like a trick, but the answer is simple: <strong>Ansible does not care which cloud the server is on.</strong> All it needs is that the machine is reachable and that SSH is allowed from the Ansible control node (or WinRM for Windows). So it works the same on AWS, Azure, GCP, or anywhere else — the cloud provider is irrelevant, reachability and SSH access are all that matter.</p></div>
+      </details>
+      <details class="iq"><summary><span class="qq">Q7</span><span class="qtext">What language are playbooks written in, and what is Ansible itself written in?</span><span class="rev">reveal ▸</span></summary>
+        <div class="ans"><span class="alab">Answer</span><p>Playbooks are written in <strong>YAML</strong> — the same format used across Kubernetes and much of DevOps, which is one of Ansible's advantages. Ansible itself is written in <strong>Python</strong>, which is why you can write your own custom modules in Python and contribute them back. If asked whether you have written custom modules, be honest — you can say you are comfortable enough with Python to write one whenever it is needed.</p></div>
+      </details>
+      <details class="iq"><summary><span class="qq">Q8</span><span class="qtext">What is the difference between an ad-hoc command and a playbook?</span><span class="rev">reveal ▸</span></summary>
+        <div class="ans"><span class="alab">Answer</span><p>An <strong>ad-hoc command</strong> is for one or two quick tasks — like running a single shell command instead of writing a script — using the form <code class="inl">ansible -i inventory all -m module -a "args"</code>. A <strong>playbook</strong> is for running many tasks together, written as a YAML file and run with <code class="inl">ansible-playbook</code>. So the rule is: ad-hoc for one or two tasks, a playbook when there are several.</p></div>
+      </details>
+      <details class="iq"><summary><span class="qq">Q9</span><span class="qtext">What is the inventory file, and how do you run tasks on only some servers?</span><span class="rev">reveal ▸</span></summary>
+        <div class="ans"><span class="alab">Answer</span><p>The inventory file is where all the server names and details are configured — by default at <code class="inl">/etc/ansible/hosts</code>, though you usually keep your own file next to your playbooks. To target only some servers, you <strong>group</strong> them in the inventory with bracket headers, such as <code class="inl">[webservers]</code> and <code class="inl">[dbservers]</code>, and then run against a group by name instead of <code class="inl">all</code>. Ansible looks up the group and runs the tasks only on those hosts.</p></div>
+      </details>
+      <details class="iq"><summary><span class="qq">Q10</span><span class="qtext">What is dynamic inventory?</span><span class="rev">reveal ▸</span></summary>
+        <div class="ans"><span class="alab">Answer</span><p>Normally you edit the inventory file to add servers. <strong>Dynamic inventory</strong> removes even that step: with some configuration, Ansible auto-detects servers — for example, any new EC2 instance created in a given region or availability zone — and manages them automatically, without you touching the file. It is what makes Ansible practical for an autoscaling fleet where servers come and go constantly.</p></div>
+      </details>
+      <details class="iq"><summary><span class="qq">Q11</span><span class="qtext">What does <code class="inl">become</code> do in a playbook?</span><span class="rev">reveal ▸</span></summary>
+        <div class="ans"><span class="alab">Answer</span><p><code class="inl">become: true</code> runs the tasks as the <strong>root</strong> user — the equivalent of putting <code class="inl">sudo</code> in front of a command. You need it for anything that requires elevated privileges, such as installing packages with the package manager. You can also use <code class="inl">become_user</code> to run as a specific user rather than root.</p></div>
+      </details>
+      <details class="iq"><summary><span class="qq">Q12</span><span class="qtext">What is "Gathering Facts"?</span><span class="rev">reveal ▸</span></summary>
+        <div class="ans"><span class="alab">Answer</span><p>Gathering Facts is the first step of every playbook run. Before your tasks execute, Ansible connects to each target, confirms it can authenticate without a password, and collects details about the server — the operating system, the interfaces, and so on — which your tasks can then use. It runs automatically no matter what playbook you write.</p></div>
+      </details>
+      <details class="iq"><summary><span class="qq">Q13</span><span class="qtext">What are Ansible roles, and why use them?</span><span class="rev">reveal ▸</span></summary>
+        <div class="ans"><span class="alab">Answer</span><p>A role is a structured, efficient way to write a <strong>complex</strong> playbook. A simple two-task playbook fits in one file, but configuring something like a Kubernetes cluster has fifty or sixty tasks plus variables, certificates, and secrets — which is unreadable in a single file. A role (scaffolded with <code class="inl">ansible-galaxy role init</code>) splits all of that into standard directories, so the playbook stays organised and can be shared. The parent playbook then just names the hosts and applies the role.</p></div>
+      </details>
+      <details class="iq"><summary><span class="qq">Q14</span><span class="qtext">Explain the directories inside a role.</span><span class="rev">reveal ▸</span></summary>
+        <div class="ans"><span class="alab">Answer</span><p><strong>tasks/</strong> holds the actual steps; <strong>handlers/</strong> holds actions triggered by a change and is where you handle problems; <strong>templates/</strong> holds Jinja2 templates for config files; <strong>files/</strong> holds static files to copy to the targets; <strong>vars/</strong> and <strong>defaults/</strong> hold variables (defaults being the lower-precedence, overridable ones); <strong>meta/</strong> holds metadata and licensing for sharing via Galaxy; and there is a <strong>tests/</strong> directory and a README.</p></div>
+      </details>
+      <details class="iq"><summary><span class="qq">Q15</span><span class="qtext">What are handlers?</span><span class="rev">reveal ▸</span></summary>
+        <div class="ans"><span class="alab">Answer</span><p>Handlers are actions that run in response to a change — a task "notifies" a handler, and the handler runs only if something actually changed. They are also where you handle situations: for example, if a service fails to start, a handler could send a notification or undo the change, so you are not left with a half-configured server. In a role, handlers live in the <code class="inl">handlers/</code> directory.</p></div>
+      </details>
+      <details class="iq"><summary><span class="qq">Q16</span><span class="qtext">What are the disadvantages of Ansible?</span><span class="rev">reveal ▸</span></summary>
+        <div class="ans"><span class="alab">Answer</span><p>Three honest ones. Windows configuration is still not as smooth as Linux. Its <strong>debugging</strong> is weak — the logs are not always easy to read, even in verbose mode, so tracking down why a playbook failed can be hard. And it can hit <strong>performance</strong> limits when running in parallel across very large fleets. Being able to name real weaknesses like these makes your answer sound like genuine experience.</p></div>
+      </details>
+    </section>
+
+    <!-- ============================================================ PHASE 4: DRILLS -->
+    <div class="phase drills" id="drills">
+      <div class="pbig">04</div>
+      <div class="pmeta"><div class="pk">Phase 4 · Scenario drills</div><h3>The senior layer — config management on a real fleet</h3>
+      <p>You can now write playbooks and roles. These 10 scenarios are the on-call and interview version: configuration drift, idempotency, secrets, slow runs at scale, partial failures, and knowing when <em>not</em> to configure in place at all. These are authored to match the Scenario Playbook's depth for a domain the course video does not cover. Answer out loud, reveal, and mark yourself.</p></div>
+    </div>
+
+<!--DRILLS-->
+
+    <div class="no-results" id="noresults">No scenarios match that search. <a href="#" onclick="document.getElementById('search').value='';runSearch();return false;" style="color:#6366f1;font-weight:600">Clear search</a></div>
+
+    <div class="foot"><b>Config Mgmt &amp; Ansible — DevOps Zero → Hero.</b> Theory, Lab &amp; Interview rebuilt from Days 14 &amp; 15 (configuration management, Puppet vs Ansible, and Ansible zero-to-hero); the 10 scenario drills are authored for this chapter, since it has no Scenario Playbook domain. <a href="index.html" style="color:#6366f1;font-weight:600">← All chapters</a></div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

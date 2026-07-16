@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DevOps Zero → Hero — Course Notes &amp; Senior Scenario Drills</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body data-chapter="home">
+<div class="wrap">
+  <aside class="rail"><!-- sidebar rendered by app.js --></aside>
+  <main class="main">
+
+    <header class="hero" style="background:radial-gradient(1200px 300px at 0% -20%,#1a3a6e 0%,transparent 60%),linear-gradient(120deg,#0a1830,#0e2244 55%,#050d1c)">
+      <div class="eyebrow">DevOps Zero → Hero, rebuilt</div>
+      <h2>Course notes + senior scenario drills, in one place</h2>
+      <p>Every chapter below takes a full day (or several) of transcript and rebuilds it as a workshop — Theory, then a hands-on Lab, then the exact interview questions the instructor flags, then a Scenario Drills phase pulled from a 300+ card senior/lead interview playbook, retrofitted into the same plain-English voice as the rest of the page. Nothing here is a slide deck rehash: every concept is explained the way you'd actually explain it out loud, and every drill is a real on-call or interview scenario with the reasoning behind the answer, not just the answer.</p>
+      <div class="flow"><span>① Theory</span><i>→</i><span>② Lab</span><i>→</i><span>③ Interview Q&amp;A</span><i>→</i><span>④ Scenario drills</span></div>
+    </header>
+
+    <div class="essentials"><div class="ess-h">⚡ How to use this site</div>
+      <p>Work through the chapters roughly in the order they're grouped below — <strong>Foundations</strong> first, since everything else assumes it, then <strong>Source &amp; delivery</strong>, <strong>Cloud &amp; OS</strong>, <strong>Containers &amp; K8s</strong>, <strong>Operations</strong>, and <strong>Scripting</strong>. <strong>People &amp; process</strong> and <strong>Careers &amp; interviews</strong> can be read any time — they're about how work actually gets done and how to talk about it, not a technical dependency chain. Each chapter's drills have a <strong>Mark</strong> button (✓ Got it / ~ Shaky / ✕ Blank) that persists in your browser, so revisiting a chapter shows exactly what still needs work. Press <code class="inl">/</code> anywhere to jump straight to search.</p>
+    </div>
+
+    <div class="chaptergroups">
+
+      <div class="grouptitle">Foundations</div><div class="grouprule"></div>
+      <div class="chapters">
+        <a class="chcard" href="fundamentals.html" style="--c:#10b981"><div class="chtop"><span class="chico">🌱</span><span class="chday">Day 1</span></div><h3>DevOps Fundamentals</h3><p>Why the wall between dev and ops exists, the culture/automation/measurement pillars, and the four DORA metrics that prove any of it is working. Plus 10 authored drills.</p><div class="chmeta"><span>theory + interview</span><span class="pb">10 drills</span><span style="color:#15803d;background:#f0fdf4;border-color:#bbf7d0">✓ live</span></div></a>
+        <a class="chcard" href="sdlc.html" style="--c:#f59e0b"><div class="chtop"><span class="chico">🔄</span><span class="chday">Day 2</span></div><h3>SDLC &amp; Org Roles</h3><p>The lifecycle as a repeating cycle, high-level vs low-level design, and where DevOps actually sits among the organisational roles. Plus 13 playbook drills.</p><div class="chmeta"><span>theory + interview</span><span class="pb">13 drills</span><span style="color:#15803d;background:#f0fdf4;border-color:#bbf7d0">✓ live</span></div></a>
+        <a class="chcard" href="virtual-machines.html" style="--c:#0891b2"><div class="chtop"><span class="chico">🖥️</span><span class="chday">Day 3</span></div><h3>Virtual Machines</h3><p>The waste problem virtualization solves, Type 1 vs Type 2 hypervisors, and how this same idea became the entire public cloud. Plus 10 authored drills.</p><div class="chmeta"><span>theory + interview</span><span class="pb">10 drills</span><span style="color:#15803d;background:#f0fdf4;border-color:#bbf7d0">✓ live</span></div></a>
+      </div>
+
+      <div class="grouptitle">Source &amp; delivery</div><div class="grouprule"></div>
+      <div class="chapters">
+        <a class="chcard" href="git.html" style="--c:#F05133"><div class="chtop"><span class="chico">🌿</span><span class="chday">Day 9·10·11</span></div><h3>Git &amp; GitHub</h3><p>Version control's four-area model, branching strategy, merge vs rebase vs cherry-pick, and clone vs fork. Plus 17 playbook drills on history recovery and leaked secrets.</p><div class="chmeta"><span>theory + lab + interview</span><span class="pb">17 drills</span><span style="color:#15803d;background:#f0fdf4;border-color:#bbf7d0">✓ live</span></div></a>
+        <a class="chcard" href="terraform.html" style="--c:#7c4ddb"><div class="chtop"><span class="chico">🏗️</span><span class="chday">Day 16·17</span></div><h3>Terraform &amp; IaC</h3><p>The per-cloud lock-in problem, "API as code," the state file, remote backends with locking, and modules. Plus 17 playbook drills on state and blast radius.</p><div class="chmeta"><span>theory + lab + interview</span><span class="pb">17 drills</span><span style="color:#15803d;background:#f0fdf4;border-color:#bbf7d0">✓ live</span></div></a>
+        <a class="chcard" href="config-mgmt.html" style="--c:#ee0000"><div class="chtop"><span class="chico">⚙️</span><span class="chday">Day 14·15</span></div><h3>Config Mgmt (Ansible)</h3><p>Why Ansible won, agentless push vs agent-based pull, playbooks, roles, and Galaxy. Plus 10 authored drills on drift, secrets, and scale.</p><div class="chmeta"><span>theory + lab + interview</span><span class="pb">10 drills</span><span style="color:#15803d;background:#f0fdf4;border-color:#bbf7d0">✓ live</span></div></a>
+        <a class="chcard" href="cicd.html" style="--c:#22c55e"><div class="chtop"><span class="chico">🔁</span><span class="chday">Multi-day</span></div><h3>CI/CD</h3><p>Jenkins and GitHub Actions pipelines, the Docker-agent pattern, and GitOps delivery with Argo CD. Plus 17 playbook drills on pipeline failure modes.</p><div class="chmeta"><span>theory + lab + interview</span><span class="pb">17 drills</span><span style="color:#15803d;background:#f0fdf4;border-color:#bbf7d0">✓ live</span></div></a>
+      </div>
+
+      <div class="grouptitle">Cloud &amp; OS</div><div class="grouprule"></div>
+      <div class="chapters">
+        <a class="chcard" href="linux-shell.html" style="--c:#f7b500"><div class="chtop"><span class="chico">🐧</span><span class="chday">Day 6·7·8</span></div><h3>Linux &amp; Shell</h3><p>Kernel/shell anatomy, permissions, shell scripting, and two real automation projects (an AWS resource tracker, a GitHub API tool). Plus 16 playbook drills.</p><div class="chmeta"><span>theory + lab + interview</span><span class="pb">16 drills</span><span style="color:#15803d;background:#f0fdf4;border-color:#bbf7d0">✓ live</span></div></a>
+        <a class="chcard" href="networking.html" style="--c:#06b6d4"><div class="chtop"><span class="chico">🌐</span><span class="chday">2 videos</span></div><h3>Networking</h3><p>IP addresses, subnets, CIDR math, ports, DNS resolution, the TCP handshake, and the OSI/TCP-IP models. Plus 16 playbook drills.</p><div class="chmeta"><span>theory + interview</span><span class="pb">16 drills</span><span style="color:#15803d;background:#f0fdf4;border-color:#bbf7d0">✓ live</span></div></a>
+        <a class="chcard" href="aws.html" style="--c:#f7b500"><div class="chtop"><span class="chico">☁️</span><span class="chday">Day 4·5·12·13·43</span></div><h3>AWS</h3><p>IaaS/PaaS/SaaS, the ~15 core services, and automating with the CLI/CFT/CDK/Terraform. Plus 16 playbook drills on IAM, leaked keys, and Well-Architected reviews.</p><div class="chmeta"><span>theory + lab + interview</span><span class="pb">16 drills</span><span style="color:#15803d;background:#f0fdf4;border-color:#bbf7d0">✓ live</span></div></a>
+      </div>
+
+      <div class="grouptitle">Containers &amp; K8s</div><div class="grouprule"></div>
+      <div class="chapters">
+        <a class="chcard" href="docker.html" style="--c:#2496ed"><div class="chtop"><span class="chico">🐳</span><span class="chday">Day 23–29</span></div><h3>Docker &amp; Containers</h3><p>Why containers are lightweight, the Docker platform, multi-stage/distroless builds, volumes, networking, and Compose. Plus 15 playbook drills.</p><div class="chmeta"><span>theory + lab + interview</span><span class="pb">15 drills</span><span style="color:#15803d;background:#f0fdf4;border-color:#bbf7d0">✓ live</span></div></a>
+        <a class="chcard" href="kubernetes.html" style="--c:#326ce5"><div class="chtop"><span class="chico">☸️</span><span class="chday">Day 30–44</span></div><h3>Kubernetes</h3><p>The flagship chapter — why K8s, its architecture, pods through custom resources and the Gateway API. Plus 28 playbook drills on crash-loops and bad rollouts.</p><div class="chmeta"><span>theory + lab + interview</span><span class="pb">28 drills</span><span style="color:#15803d;background:#f0fdf4;border-color:#bbf7d0">✓ live</span></div></a>
+      </div>
+
+      <div class="grouptitle">Operations</div><div class="grouprule"></div>
+      <div class="chapters">
+        <a class="chcard" href="observability.html" style="--c:#e6522c"><div class="chtop"><span class="chico">📈</span><span class="chday">Day 42</span></div><h3>Observability</h3><p>The three pillars, Prometheus's pull model, Grafana, and the three layers of Kubernetes metrics. Plus 18 playbook drills on silent scrape failures and alert fatigue.</p><div class="chmeta"><span>theory + lab + interview</span><span class="pb">18 drills</span><span style="color:#15803d;background:#f0fdf4;border-color:#bbf7d0">✓ live</span></div></a>
+      </div>
+
+      <div class="grouptitle">Scripting</div><div class="grouprule"></div>
+      <div class="chapters">
+        <a class="chcard" href="python.html" style="--c:#4b8bbe"><div class="chtop"><span class="chico">🐍</span><span class="chday">Day 0–16</span></div><h3>Python for DevOps</h3><p>Shell vs Python, the data model, requests/APIs, file handling, boto3, and a GitHub-to-JIRA webhook capstone. Plus 13 playbook drills.</p><div class="chmeta"><span>theory + lab + interview</span><span class="pb">13 drills</span><span style="color:#15803d;background:#f0fdf4;border-color:#bbf7d0">✓ live</span></div></a>
+      </div>
+
+      <div class="grouptitle">People &amp; process</div><div class="grouprule"></div>
+      <div class="chapters">
+        <a class="chcard" href="project-mgmt.html" style="--c:#ec4899"><div class="chtop"><span class="chico">📈</span><span class="chday">Day 22 · JIRA</span></div><h3>Project Mgmt / JIRA</h3><p>Agile vs waterfall, the DevOps toolset (JIRA, Confluence, ServiceNow), and the full Scrum workflow — backlog, refinement, story points, sprints, ceremonies, and velocity. Plus 12 drills.</p><div class="chmeta"><span>theory + workflow + interview</span><span class="pb">12 drills</span><span style="color:#15803d;background:#f0fdf4;border-color:#bbf7d0">✓ live</span></div></a>
+      </div>
+
+      <div class="grouptitle">Careers &amp; interviews</div><div class="grouprule"></div>
+      <div class="chapters">
+        <a class="chcard" href="interview-day-to-day.html" style="--c:#0ea5e9"><div class="chtop"><span class="chico">🗣️</span><span class="chday">Interview prep</span></div><h3>Current Project &amp; Day-to-Day</h3><p>How to explain your project and day-to-day activities in an interview, plus 20 follow-ups that arise from your story — with model answers.</p><div class="chmeta"><span>project + day-to-day + Q&amp;A</span><span style="color:#15803d;background:#f0fdf4;border-color:#bbf7d0">✓ live</span></div></a>
+      </div>
+
+      <div class="grouptitle">Advanced drills · playbook only</div><div class="grouprule"></div>
+      <p class="secsub" style="--accent:#10b981;margin-top:0">These seven domains aren't in the video course but round out the senior/lead interview surface — they ship as pure scenario drills.</p>
+      <div class="chapters">
+        <a class="chcard soon" style="--c:#8b5cf6"><div class="chtop"><span class="chico">🤝</span><span class="chday">Playbook only</span></div><h3>Inter-team Collaboration</h3><p>Cross-team dependencies, API contracts, and shared-ownership friction.</p><div class="chmeta"><span class="pb">12 drills</span><span class="soonbadge">soon</span></div></a>
+        <a class="chcard soon" style="--c:#8b5cf6"><div class="chtop"><span class="chico">👥</span><span class="chday">Playbook only</span></div><h3>Intra-team Collaboration</h3><p>Code review culture, on-call handoffs, and team-level process friction.</p><div class="chmeta"><span class="pb">12 drills</span><span class="soonbadge">soon</span></div></a>
+        <a class="chcard soon" style="--c:#8b5cf6"><div class="chtop"><span class="chico">💬</span><span class="chday">Playbook only</span></div><h3>Behavioural</h3><p>Conflict, failure, leadership, and ownership stories.</p><div class="chmeta"><span class="pb">20 drills</span><span class="soonbadge">soon</span></div></a>
+        <a class="chcard soon" style="--c:#8b5cf6"><div class="chtop"><span class="chico">⚔️</span><span class="chday">Playbook only</span></div><h3>War Stories</h3><p>Structured incident and disaster narratives, ready to adapt.</p><div class="chmeta"><span class="pb">17 drills</span><span class="soonbadge">soon</span></div></a>
+        <a class="chcard soon" style="--c:#8b5cf6"><div class="chtop"><span class="chico">🧩</span><span class="chday">Playbook only</span></div><h3>System Design</h3><p>Designing for scale, reliability, and trade-offs under constraints.</p><div class="chmeta"><span class="pb">20 drills</span><span class="soonbadge">soon</span></div></a>
+        <a class="chcard soon" style="--c:#8b5cf6"><div class="chtop"><span class="chico">🛡️</span><span class="chday">Playbook only</span></div><h3>DevSecOps</h3><p>Shifting security left across the pipeline and the SDLC.</p><div class="chmeta"><span class="pb">19 drills</span><span class="soonbadge">soon</span></div></a>
+        <a class="chcard soon" style="--c:#8b5cf6"><div class="chtop"><span class="chico">💰</span><span class="chday">Playbook only</span></div><h3>FinOps</h3><p>Cloud cost ownership, showback/chargeback, and optimisation discipline.</p><div class="chmeta"><span class="pb">17 drills</span><span class="soonbadge">soon</span></div></a>
+      </div>
+
+    </div>
+
+    <div class="no-results" id="noresults">No chapters match that search. <a href="#" onclick="document.getElementById('search').value='';runSearch();return false;" style="color:#6366f1;font-weight:600">Clear search</a></div>
+
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>
