@@ -15,6 +15,13 @@
 9. [Operational Automations, Python Scripting & FinOps](#9-operational-automations-python-scripting--finops)
 10. [The Production Incident Triage Playbook (5 Real-World Incidents)](#10-the-production-incident-triage-playbook-5-real-world-incidents)
 11. [The 5 Critical Architectural Challenges & Engineering Solutions](#11-the-5-critical-architectural-challenges--engineering-solutions)
+12. [Terraform / Infrastructure as Code (IaC) Deep Dive](#12-terraform--infrastructure-as-code-iac-deep-dive)
+13. [Helm Chart Architecture & Templating](#13-helm-chart-architecture--templating)
+14. [VPC & Networking Architecture](#14-vpc--networking-architecture)
+15. [EKS Cluster Upgrade Process](#15-eks-cluster-upgrade-process)
+16. [Disaster Recovery, Backup & High Availability Strategy](#16-disaster-recovery-backup--high-availability-strategy)
+17. [Git Branching Strategy & Code Review Culture](#17-git-branching-strategy--code-review-culture)
+18. [Interview Preparation: Day-to-Day, Key Numbers & Anticipated Follow-Up Questions](#18-interview-preparation-day-to-day-key-numbers--anticipated-follow-up-questions)
 
 ---
 
@@ -1322,3 +1329,522 @@ aws iam get-open-id-connect-provider \
 5. **Managing "Noisy Neighbors" in Multi-Tenant Kubernetes**:
    - *Problem*: Memory leaks or CPU spikes in one team's namespace starved adjacent pods on shared worker nodes.
    - *Solution*: Enforced namespace-level `ResourceQuotas` and `LimitRanges` + set explicit container `requests` and `limits` + configured `topologySpreadConstraints`, `podAntiAffinity`, and `PodDisruptionBudgets` + implemented **Dedicated Managed Node Groups** with Taints and Tolerations for hardware-level blast radius containment.
+
+---
+
+# 12. Terraform / Infrastructure as Code (IaC) Deep Dive
+
+An interviewer will almost certainly ask: *"How do you manage your infrastructure?"* and follow up with *"Show me your Terraform structure"* or *"How do you handle state?"*. Having zero Terraform in your story is a red flag for a 7-year DevOps engineer.
+
+## 12.1 Terraform Repository & Module Structure
+
+The DevOps squad maintains a separate `infra-terraform` repository, completely decoupled from both the application source code and the GitOps manifests repo. This is critical—mixing Terraform with app code causes accidental `terraform apply` triggers on unrelated PRs.
+
+```
+infra-terraform/
+├── environments/
+│   ├── dev/
+│   │   ├── main.tf          # Calls reusable modules with dev-specific vars
+│   │   ├── variables.tf
+│   │   ├── terraform.tfvars  # dev-specific values (instance sizes, replica counts)
+│   │   └── backend.tf        # S3 state backend: s3://nexora-tf-state/commerce/dev/
+│   ├── staging/
+│   │   ├── main.tf
+│   │   └── backend.tf        # s3://nexora-tf-state/commerce/staging/
+│   └── prod/
+│       ├── main.tf
+│       └── backend.tf        # s3://nexora-tf-state/commerce/prod/
+├── modules/                   # Reusable child modules (DRY principle)
+│   ├── aurora-postgres/
+│   │   ├── main.tf            # aws_rds_cluster, aws_rds_cluster_instance
+│   │   ├── variables.tf       # instance_class, db_name, backup_retention
+│   │   └── outputs.tf         # cluster_endpoint, reader_endpoint
+│   ├── elasticache-redis/
+│   │   ├── main.tf
+│   │   ├── variables.tf
+│   │   └── outputs.tf
+│   ├── sqs-fifo-queue/
+│   │   ├── main.tf
+│   │   ├── variables.tf       # queue_name, dlq_max_retries
+│   │   └── outputs.tf         # queue_url, queue_arn
+│   ├── irsa-role/
+│   │   ├── main.tf            # aws_iam_role, aws_iam_role_policy_attachment
+│   │   ├── variables.tf       # service_account_name, namespace, policy_arns
+│   │   └── outputs.tf         # role_arn
+│   └── ecr-repository/
+│       ├── main.tf
+│       └── outputs.tf
+└── global/
+    ├── ecr.tf                 # Shared ECR repositories for all 5 services
+    └── secrets-manager.tf     # Secret path structures
+```
+
+## 12.2 Terraform State Management (S3 + DynamoDB Locking)
+
+Terraform state is the single most critical file in your infrastructure. It maps what Terraform "knows" to what actually exists in AWS. Losing or corrupting it means Terraform loses track of all your resources.
+
+```hcl
+# backend.tf (Production)
+terraform {
+  backend "s3" {
+    bucket         = "nexora-terraform-state-prod"
+    key            = "commerce/prod/terraform.tfstate"
+    region         = "eu-west-1"
+    encrypt        = true                              # AES-256 encryption at rest
+    dynamodb_table = "nexora-terraform-locks"          # Prevents concurrent applies
+  }
+}
+```
+
+**Why DynamoDB locking matters**: If two engineers run `terraform apply` simultaneously (e.g., during an incident), one could overwrite the other's state, orphaning resources in AWS. DynamoDB provides a distributed lock: the first apply acquires the lock, and the second is blocked until it completes.
+
+**The `terraform plan` → PR Review → `terraform apply` Workflow**:
+1. Engineer makes changes in a feature branch.
+2. CI runs `terraform plan` automatically on PR and posts the diff as a PR comment.
+3. A peer reviews the plan output (checking for unexpected destroys or recreates).
+4. After approval and merge to `main`, a separate CI job runs `terraform apply -auto-approve`.
+5. For production, `terraform apply` requires manual approval in GitHub Actions (environment protection rules).
+
+## 12.3 Reusable Terraform Module Example: SQS FIFO Queue with DLQ
+
+```hcl
+# modules/sqs-fifo-queue/main.tf
+resource "aws_sqs_queue" "dead_letter" {
+  name                        = "${var.queue_name}-dlq.fifo"
+  fifo_queue                  = true
+  content_based_deduplication = true
+  message_retention_seconds   = 1209600  # 14 days retention for failed messages
+
+  tags = var.common_tags
+}
+
+resource "aws_sqs_queue" "main" {
+  name                        = "${var.queue_name}.fifo"
+  fifo_queue                  = true
+  content_based_deduplication = true
+  visibility_timeout_seconds  = 30
+  message_retention_seconds   = 345600   # 4 days
+
+  redrive_policy = jsonencode({
+    deadLetterTargetArn = aws_sqs_queue.dead_letter.arn
+    maxReceiveCount     = var.dlq_max_retries  # Default: 3
+  })
+
+  tags = var.common_tags
+}
+
+# modules/sqs-fifo-queue/variables.tf
+variable "queue_name"       { type = string }
+variable "dlq_max_retries"  { type = number, default = 3 }
+variable "common_tags"      { type = map(string), default = {} }
+
+# modules/sqs-fifo-queue/outputs.tf
+output "queue_url" { value = aws_sqs_queue.main.url }
+output "queue_arn" { value = aws_sqs_queue.main.arn }
+output "dlq_arn"   { value = aws_sqs_queue.dead_letter.arn }
+```
+
+**Calling the module from the environment:**
+```hcl
+# environments/prod/main.tf
+module "payment_success_queue" {
+  source         = "../../modules/sqs-fifo-queue"
+  queue_name     = "prod-commerce-payment-success"
+  dlq_max_retries = 3
+  common_tags    = local.common_tags
+}
+```
+
+---
+
+# 13. Helm Chart Architecture & Templating
+
+When an interviewer asks *"How do you deploy to Kubernetes?"*, they expect you to explain Helm or Kustomize (or both). Nexora uses **Kustomize for environment overlays** (dev/qa/stage/prod image tags and replica counts) and a **Helm library chart** for the base template structure of all 5 microservices.
+
+## 13.1 Helm Chart Directory Structure
+
+```
+helm-charts/
+└── microservice-base/
+    ├── Chart.yaml
+    ├── values.yaml              # Default values (overridden per service)
+    └── templates/
+        ├── deployment.yaml
+        ├── service.yaml
+        ├── hpa.yaml
+        ├── ingress.yaml
+        ├── serviceaccount.yaml
+        ├── networkpolicy.yaml
+        └── _helpers.tpl          # Template helper functions (labels, selectors)
+```
+
+## 13.2 Helm `values.yaml` (Default + Per-Service Override)
+
+```yaml
+# values.yaml (Base Defaults)
+replicaCount: 2
+image:
+  repository: 444455556666.dkr.ecr.eu-west-1.amazonaws.com/auth-service
+  tag: "latest"      # Overridden by Kustomize newTag in GitOps
+  pullPolicy: IfNotPresent
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    cpu: 500m
+    memory: 1Gi
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 20
+  targetCPUUtilizationPercentage: 60
+
+serviceAccount:
+  create: true
+  annotations: {}
+  # eks.amazonaws.com/role-arn: "arn:aws:iam::..."  # Set per environment
+
+probes:
+  readiness:
+    path: /healthz/ready
+    initialDelaySeconds: 10
+    periodSeconds: 5
+  liveness:
+    path: /healthz/live
+    initialDelaySeconds: 20
+    periodSeconds: 10
+
+env: []
+  # - name: LOG_LEVEL
+  #   value: "info"
+```
+
+**Per-service override** (`values-payment-prod.yaml`):
+```yaml
+replicaCount: 4
+image:
+  repository: 444455556666.dkr.ecr.eu-west-1.amazonaws.com/payment-service
+resources:
+  requests:
+    cpu: 500m
+    memory: 1Gi
+  limits:
+    cpu: "1"
+    memory: 2Gi
+autoscaling:
+  minReplicas: 3
+  maxReplicas: 15
+serviceAccount:
+  annotations:
+    eks.amazonaws.com/role-arn: "arn:aws:iam::444455556666:role/nexora-prod-payment-role"
+env:
+  - name: LOG_LEVEL
+    value: "warn"
+  - name: PAYMENT_TIMEOUT_MS
+    value: "5000"
+```
+
+---
+
+# 14. VPC & Networking Architecture
+
+Interviewers for senior DevOps roles will probe networking: *"Explain your VPC layout"*, *"How does your payment service talk to external banks?"*, *"Why NAT Gateways?"*.
+
+## 14.1 VPC Subnet Layout
+
+Each AWS account (Prod, Non-Prod) has a dedicated VPC. Subnets follow a strict **Public / Private / Isolated** tier model across 3 Availability Zones:
+
+```mermaid
+flowchart TD
+    subgraph VPC["VPC: 10.10.0.0/16 (Production)"]
+        direction TB
+        subgraph PublicSubnets["Public Subnets (Internet-Facing)"]
+            PubA["10.10.1.0/24 (eu-west-1a)<br/>ALB, NAT Gateway A"]
+            PubB["10.10.2.0/24 (eu-west-1b)<br/>ALB, NAT Gateway B"]
+            PubC["10.10.3.0/24 (eu-west-1c)<br/>ALB, NAT Gateway C"]
+        end
+        subgraph PrivateSubnets["Private Subnets (EKS Worker Nodes)"]
+            PrivA["10.10.10.0/24 (eu-west-1a)<br/>EKS Nodes, Pods"]
+            PrivB["10.10.11.0/24 (eu-west-1b)<br/>EKS Nodes, Pods"]
+            PrivC["10.10.12.0/24 (eu-west-1c)<br/>EKS Nodes, Pods"]
+        end
+        subgraph IsolatedSubnets["Isolated Subnets (Databases - No Internet)"]
+            IsoA["10.10.20.0/24 (eu-west-1a)<br/>Aurora Primary, Redis"]
+            IsoB["10.10.21.0/24 (eu-west-1b)<br/>Aurora Replica, Redis"]
+        end
+    end
+    PublicSubnets -->|"NAT Gateway<br/>(Outbound Only)"| PrivateSubnets
+    PrivateSubnets -->|"Security Group Rules"| IsolatedSubnets
+    classDef pub fill:#0369a1,stroke:#38bdf8,stroke-width:1.5px,color:#ffffff;
+    classDef priv fill:#1e293b,stroke:#34d399,stroke-width:1.5px,color:#ffffff;
+    classDef iso fill:#7f1d1d,stroke:#ef4444,stroke-width:1.5px,color:#ffffff;
+    class PublicSubnets,PubA,PubB,PubC pub;
+    class PrivateSubnets,PrivA,PrivB,PrivC priv;
+    class IsolatedSubnets,IsoA,IsoB iso;
+```
+
+**Key design rationale:**
+- **Public subnets**: Only ALBs and NAT Gateways have public IPs. No EKS worker nodes are ever placed here.
+- **Private subnets**: All EKS worker nodes and pods live here. They reach the internet only through NAT Gateways (for pulling Docker images from ECR, downloading OS patches, etc.).
+- **Isolated subnets**: Databases (Aurora, ElastiCache) have no internet route at all. They are reachable only from private subnets via Security Group rules.
+
+## 14.2 Security Groups vs. NACLs
+
+| Layer | Scope | Stateful? | Typical Use |
+| :--- | :--- | :---: | :--- |
+| **Security Groups** | Attached to ENI (Pod/Node/RDS level) | Yes | Allow EKS nodes → Aurora on port 5432; Allow ALB → EKS nodes on NodePort range. |
+| **Network ACLs** | Subnet-level firewall | No (Stateless) | Broad subnet-level deny rules (e.g., block SSH port 22 from internet to private subnets). |
+
+## 14.3 How the Payment Service Reaches External Banks
+
+The `payment-service` must call external bank APIs (Stripe, Visa switching networks) over the public internet. Banks whitelist specific source IPs for security. This is achieved using:
+1. Pods in **private subnets** route outbound traffic through **NAT Gateways**.
+2. Each NAT Gateway has a **static Elastic IP (EIP)**.
+3. These 3 EIPs (one per AZ) are shared with upstream acquiring banks for IP whitelisting.
+4. Alternatively, a dedicated **AWS Global Accelerator** provides 2 fixed anycast IPs.
+
+---
+
+# 15. EKS Cluster Upgrade Process
+
+*"Have you upgraded EKS? Walk me through it."* — This is a near-guaranteed follow-up for anyone claiming EKS experience.
+
+## 15.1 The 4-Phase Upgrade Workflow
+
+EKS upgrades must follow a strict sequence. You cannot skip versions (e.g., 1.28 → 1.30 is not allowed; you must go 1.28 → 1.29 → 1.30).
+
+1. **Phase 1: Pre-Upgrade Compatibility Audit**
+   - Review the [EKS release notes](https://docs.aws.amazon.com/eks/latest/userguide/kubernetes-versions.html) for deprecated API versions (e.g., `policy/v1beta1` PodDisruptionBudget removed in 1.25).
+   - Run `kubectl convert` or `pluto` to scan all manifests in the GitOps repo for deprecated APIs.
+   - Verify all EKS add-ons (VPC CNI, CoreDNS, kube-proxy, EBS CSI driver) have compatible versions.
+
+2. **Phase 2: Control Plane Upgrade (Managed by AWS)**
+   - Executed via Terraform: `cluster_version = "1.30"` → `terraform apply`.
+   - AWS upgrades the managed control plane (API server, etcd, scheduler) with zero downtime.
+   - Existing worker nodes continue running the old kubelet version temporarily (this is safe for ±1 version skew).
+
+3. **Phase 3: Managed Node Group Rolling Upgrade**
+   - Update the node group's AMI to the new version: `ami_release_version = "1.30-..."`.
+   - EKS performs a rolling replacement: cordon old node → drain pods (respecting PodDisruptionBudgets) → terminate old node → launch new node.
+   - `PodDisruptionBudget` (`minAvailable: 1`) ensures at least one replica stays running during drains.
+
+4. **Phase 4: Add-On Version Updates**
+   - Update VPC CNI, CoreDNS, kube-proxy, and EBS CSI driver add-ons to versions compatible with the new Kubernetes version.
+   - Verify post-upgrade: `kubectl get nodes` (all nodes show new version), `kubectl get pods -A` (no CrashLoopBackOff).
+
+**Upgrade Cadence**: Nexora upgrades EKS quarterly, staying within the AWS-supported N-2 version window to avoid forced upgrades.
+
+---
+
+# 16. Disaster Recovery, Backup & High Availability Strategy
+
+*"What happens if your entire AZ goes down?"* or *"What's your DR strategy?"* — A 7-year engineer must have clear answers here.
+
+## 16.1 HA vs. DR: The Distinction
+
+| Concept | Scope | Mechanism | Recovery Time |
+| :--- | :--- | :--- | :--- |
+| **High Availability (HA)** | Survives **single AZ failure** | Multi-AZ deployments (3 replicas across 3 AZs), Aurora Multi-AZ failover | Seconds to minutes (automatic) |
+| **Disaster Recovery (DR)** | Survives **full region failure** | Cross-region Aurora Global Database, S3 Cross-Region Replication, standby EKS cluster | Minutes to hours (manual failover) |
+
+## 16.2 Per-Service Backup & Recovery
+
+| Component | Backup Mechanism | RPO (Data Loss Tolerance) | RTO (Recovery Time) |
+| :--- | :--- | :--- | :--- |
+| **Aurora PostgreSQL** | Automated daily snapshots (35-day retention) + continuous backups (Point-in-Time Recovery to any second within 35 days) | ~5 minutes (PITR) | ~15 minutes |
+| **ElastiCache Redis** | Daily RDB snapshots to S3 (7-day retention). Note: Redis is ephemeral cache—data loss is acceptable if the source of truth (Aurora/DynamoDB) is intact. | Hours (cache rebuild) | ~10 minutes |
+| **DynamoDB** | Point-in-Time Recovery (PITR) enabled. On-demand backups before major releases. | ~5 minutes | ~30 minutes |
+| **EKS Cluster State** | All manifests in Git (GitOps). Cluster can be fully reconstructed from `infra-terraform` + `gitops-manifests` repos. Velero snapshots for PersistentVolumes. | Zero (declarative Git) | ~1 hour (full rebuild) |
+| **S3 Assets** | Versioning enabled + Cross-Region Replication (CRR) to `eu-central-1`. | Zero (real-time replication) | Minutes |
+
+---
+
+# 17. Git Branching Strategy & Code Review Culture
+
+*"What branching model do you use?"* — A simple but important question.
+
+## 17.1 Trunk-Based Development (Application Repos)
+
+Dev squads use **Trunk-Based Development** with short-lived feature branches:
+- **`main`** branch is always deployable. Protected with branch protection rules.
+- Developers create **feature branches** (`feature/JIRA-1234-add-voucher-logic`), work for 1–3 days max, then open a PR.
+- PRs require: 1 peer approval + all CI checks green (unit tests, SonarQube, Trivy, linting).
+- Merge strategy: **Squash and Merge** (clean linear history, one commit per feature).
+- No long-lived `develop` or `release` branches. Release candidates are tagged on `main` (e.g., `v2.4.0`).
+
+## 17.2 GitOps Manifests Repo (Stricter Controls)
+
+The `gitops-manifests` repository has elevated protection because merging to it directly triggers production deployments:
+- PRs to `overlays/prod/` require **Tech Lead approval** + **Release Manager sign-off**.
+- Branch protection: No force-push, no direct commits, mandatory CI status checks.
+- Every merge to `main` generates an audit log entry linked to the Jira Change Request.
+
+---
+
+# 18. Interview Preparation: Day-to-Day, Key Numbers & Anticipated Follow-Up Questions
+
+This section is the interview survival kit. It covers what textbooks and architecture documents never teach—how to *narrate* your experience convincingly.
+
+## 18.1 "Walk Me Through Your Typical Day"
+
+> *This is often the opening question. It sets the tone for the entire interview. A weak answer ("I deploy stuff and fix issues") kills credibility immediately.*
+
+**Sample Narrative (adapt to your own voice):**
+
+*"I typically start around 9:15 AM by checking our Grafana dashboards — specifically the 4 Golden Signals panels for our 5 Commerce microservices. I scan for any overnight latency spikes or error rate breaches that Alertmanager may have fired to our `#prod-alerts` Slack channel.*
+
+*At 9:30 we have a 15-minute DevOps standup where the On-Call Shield summarizes overnight alerts and any developer tickets in the helpdesk queue. I'm currently one of the Squad Liaisons, so I share updates on infra work I'm doing for the Cart and Payment dev squads.*
+
+*On a typical morning, I might be working on a Terraform module — say, provisioning a new SQS FIFO queue that the Payment squad needs for an upcoming retry mechanism. I write the module, run `terraform plan`, verify the diff, and raise a PR for peer review.*
+
+*After lunch, I might review a PR from another engineer who's updating the Helm values for the Catalog service — maybe they're bumping the JVM memory limit after we saw an OOMKilled incident last week. I check that the numbers make sense relative to the node group capacity and the ResourceQuota.*
+
+*Twice a week, I attend the Cart & Payment dev squad's backlog refinement to understand upcoming features and pre-identify cloud dependencies — like if they're planning a new webhook feature, I know I'll need to provision an API Gateway or an SQS queue ahead of time.*
+
+*On release days (Thursdays), I'm watching the ArgoCD sync and the Grafana dashboards closely during the 10 AM release window. If something looks off — say the error rate ticks above 2% — we hold the rollout and investigate before proceeding."*
+
+---
+
+## 18.2 Key Numbers & Metrics to Memorize
+
+Interviewers test depth by asking for specifics. Vague answers like "we have many services" or "we deploy often" signal surface-level experience. Have these numbers ready:
+
+| Metric | Your Answer |
+| :--- | :--- |
+| **Total microservices in the platform** | 30+ across 4 domains. My squad owns 5. |
+| **Team size** | 7 DevOps engineers supporting ~30 developers across 5 dev squads. |
+| **Deployment frequency** | 8–12 production deployments per sprint (biweekly). Daily deploys to dev/qa. |
+| **CI pipeline duration** | Optimized from 18 minutes down to ~3.5 minutes using BuildKit caching + parallel jobs. |
+| **EKS cluster version** | Currently on 1.29, upgrading to 1.30 this quarter. |
+| **Node count (Prod)** | ~15–25 worker nodes across 5 node groups (scales dynamically via Karpenter). |
+| **Pod count (Commerce namespace)** | ~40–80 pods at steady state; bursts to ~150 during peak traffic. |
+| **Uptime SLA** | 99.95% target (translates to ~22 minutes of allowed downtime/month). |
+| **MTTR (Mean Time to Recovery)** | Under 15 minutes for Severity-1 incidents (thanks to GitOps rollback). |
+| **Container image size** | ~80–120MB (multi-stage builds from ~900MB originals). |
+| **Environments** | 4 tiers: Dev → QA → Staging → Prod. |
+| **IaC coverage** | 100% of cloud infrastructure is Terraform-managed. Zero manual AWS Console resources. |
+
+---
+
+## 18.3 Anticipated Deep Follow-Up Questions & How to Answer Them
+
+### On Architecture & Kubernetes:
+
+**Q: "Why not just use one big namespace for all 30 services?"**
+> Because namespaces provide RBAC isolation (my team can't accidentally delete Billing pods), ResourceQuota budgeting (one team can't starve another's CPU), NetworkPolicy boundaries, and independent ArgoCD deployment pipelines. Without namespaces, a single misconfigured `kubectl delete deployment` could wipe out another team's production service.
+
+**Q: "If namespaces are just soft boundaries, why not use separate clusters per team?"**
+> Cost and operational overhead. Each EKS cluster has a fixed control plane cost (~$73/month) and requires separate monitoring, RBAC, networking, and add-on management. With 4 domains, that's 4× the operational burden. The trade-off is to use a shared cluster with dedicated node groups (hardware isolation via Taints/Tolerations) and strict RBAC/NetworkPolicies. Only the Payment service gets extra isolation due to PCI-DSS compliance requirements.
+
+**Q: "What happens if Karpenter provisions a node but the pod still doesn't schedule?"**
+> Common causes: the pod's `nodeSelector` or `tolerations` don't match the provisioned node's labels/taints, or the pod's resource requests exceed any single node's allocatable capacity. I'd check `kubectl describe pod <name>` for the Events section — it shows the exact scheduling failure reason. If it's a taint mismatch, I fix the Karpenter `NodePool` spec. If it's oversized requests, I right-size the container resources.
+
+### On CI/CD:
+
+**Q: "Why separate repos for app code and GitOps manifests?"**
+> To break the infinite loop. If manifests lived in the app repo, every CI run would update the manifest, which would trigger another CI run, which would update the manifest again. Separating them also gives different access controls — developers can merge app code freely, but production manifest changes require Tech Lead approval.
+
+**Q: "What if a production deployment causes errors — how do you roll back?"**
+> `git revert <commit-sha>` on the GitOps manifests repo and sync ArgoCD. Pods roll back to the previous image tag in under 30 seconds. No CI rebuild needed — the old image is still in ECR. This is the key advantage of GitOps: the cluster converges to whatever state is declared in Git.
+
+**Q: "How do you handle database migrations during a rolling update?"**
+> We use the Expand/Contract pattern. First release: schema migration adds new nullable columns (backward-compatible). Second release: new code starts writing to new columns. Third release: old columns are dropped. Migrations run as Kubernetes Helm pre-upgrade hooks (Job resources) that execute *before* the new pods start.
+
+### On Observability:
+
+**Q: "How do you trace a request across multiple microservices?"**
+> OpenTelemetry injects a `traceparent` W3C header at the Ingress layer. Each service propagates this header downstream. Jaeger/Tempo collects spans from all services and stitches them into a single trace. In Grafana, I can see a waterfall view: Auth took 12ms, Cart took 45ms, Payment took 200ms (the bank API was slow). This immediately pinpoints where latency lives.
+
+**Q: "Your CoreDNS incident — how did you actually diagnose it?"**
+> First symptom: all 5 services started throwing 502s simultaneously. That ruled out any single service bug — it had to be shared infrastructure. I ran `kubectl top pods -n kube-system -l k8s-app=kube-dns` and saw both CoreDNS pods at 100% CPU. Then `kubectl logs` showed `plugin/errors: SERVFAIL` messages. The 2 default replicas couldn't handle DNS queries from 300+ pods. Immediate fix: scale to 6 replicas. Permanent fix: deploy NodeLocal DNSCache as a DaemonSet so every node caches DNS locally.
+
+### On Terraform & IaC:
+
+**Q: "What happens if someone manually changes something in the AWS Console?"**
+> Configuration drift. Terraform won't know about it until the next `terraform plan`, which will show the drift as a diff. We enforce a strict policy: no manual Console changes. All changes go through Terraform PRs. We also run weekly `terraform plan` audits in CI to detect any drift and alert the team.
+
+**Q: "How do you handle Terraform state corruption?"**
+> S3 versioning is enabled on the state bucket, so we can restore a previous version. DynamoDB locking prevents concurrent corruption. For extreme cases, `terraform import` can re-associate existing resources with state entries. We've never had full corruption because of these safeguards.
+
+### On Security:
+
+**Q: "How do your pods authenticate to AWS services without access keys?"**
+> IRSA — IAM Roles for Service Accounts. Each pod runs under a Kubernetes ServiceAccount annotated with an AWS IAM Role ARN. The EKS Pod Identity Webhook injects an OIDC token. The AWS SDK inside the container calls `sts:AssumeRoleWithWebIdentity` with this token, and AWS STS returns temporary credentials valid for 1 hour. Zero static keys anywhere.
+
+**Q: "What if someone commits a secret to Git accidentally?"**
+> Three layers of defense. First: `gitleaks` pre-commit hooks block it locally before it's even committed. Second: CI runs Trivy secret scanning on every PR — even if the pre-commit hook is bypassed, CI fails. Third: if it somehow reaches the remote, GitHub's Secret Scanning sends an automated alert, and our runbook requires immediate rotation of the compromised credential plus a `git filter-branch` or BFG Repo-Cleaner to scrub Git history.
+
+### Behavioral / Situational:
+
+**Q: "Tell me about a time you disagreed with a decision."**
+> *(Use the STAR framework: Situation, Task, Action, Result.)*
+> *"When we first designed the multi-tenant cluster, the Central Cloud team wanted to put all 30+ services on a single shared node group to simplify management. I pushed back because of the PCI-DSS scope issue with Payment. I prepared a cost comparison showing that a dedicated 2-node payment node group would cost only ~$150/month extra but would dramatically reduce PCI audit scope. The architecture review board agreed, and we implemented dedicated tainted node groups per domain."*
+
+**Q: "Describe a production incident you handled."**
+> *(Pick Incident #2 — OOMKilled — it has the richest technical depth.)*
+> *"At 2 AM, PagerDuty alerted us that the Catalog service was CrashLooping. I SSHed into the context, ran `kubectl describe pod` and saw 'Last State: Terminated, Reason: OOMKilled, Exit Code: 137'. The JVM was configured with `-Xmx1024m` inside a container with a 1Gi limit — the heap plus Metaspace plus native memory exceeded the cgroup limit, and the Linux kernel's OOM Killer terminated the process. I immediately bumped the limit to 2Gi via a Helm values PR and rolling-restarted. The permanent fix was switching to `-XX:MaxRAMPercentage=75.0` so the JVM dynamically sizes its heap to 75% of the container limit, leaving 25% headroom for Metaspace and OS overhead."*
+
+---
+
+## 18.4 General Troubleshooting Framework (For Any Unknown Issue)
+
+When asked *"How do you troubleshoot a production issue you've never seen before?"*, use this structured approach:
+
+1. **Scope the Blast Radius**: Is it one service, one namespace, or the entire cluster? If all 5 services are failing, it's shared infrastructure (CoreDNS, Ingress, node health). If only Cart is failing, it's Cart-specific (code bug, Redis, resource limits).
+
+2. **Check the 4 Golden Signals**: Latency up? Errors up? Traffic drop? Saturation (CPU/Memory)?
+
+3. **Inspect Pod Health**:
+   ```bash
+   kubectl get pods -n commerce-prod -o wide      # Are pods Running, Pending, CrashLoopBackOff?
+   kubectl describe pod <name> -n commerce-prod    # Check Events section for scheduling/OOM/probe failures
+   kubectl logs <name> -n commerce-prod --previous # Previous container logs (if restarted)
+   kubectl top pod <name> -n commerce-prod         # Real-time CPU/Memory consumption
+   ```
+
+4. **Check Upstream Dependencies**: Is the database healthy? Is Redis responding? Is the SQS queue backed up?
+   ```bash
+   # Aurora: Check connection count and CPU via CloudWatch or RDS Console
+   # Redis: Check via redis-cli or CloudWatch EngineCPUUtilization
+   # SQS: Check ApproximateNumberOfMessagesVisible via AWS CLI
+   aws sqs get-queue-attributes --queue-url <url> --attribute-names ApproximateNumberOfMessagesVisible
+   ```
+
+5. **Correlate Across Traces**: Open Jaeger/Grafana Tempo, search by `traceID` from the error log, and follow the span waterfall to find where the chain breaks.
+
+6. **Mitigate First, Root-Cause Later**: Scale up replicas, increase memory limits, restart pods, or rollback the last deployment. Stop the bleeding. Then write a blameless post-mortem with the 5 Whys.
+
+---
+
+## 18.5 Common "Trap" Questions & How to Handle Them
+
+**"What is your biggest weakness in DevOps?"**
+> Never say "I don't have any." Pick something real but show growth: *"Networking was my weakest area early on — I could deploy services but struggled with VPC peering and Transit Gateway routing. I dedicated time to studying AWS networking through hands-on labs and now I'm comfortable designing multi-account VPC architectures with private subnets and NAT Gateways."*
+
+**"Why are you leaving your current role?"**
+> Keep it positive and growth-oriented: *"I've built strong expertise in EKS, GitOps, and Terraform at my current role, but the platform has matured to a steady state. I'm looking for a role where I can tackle new challenges — perhaps multi-region architectures, service mesh adoption, or building an Internal Developer Platform from scratch."*
+
+**"Do you have experience with [technology you don't know]?"**
+> Be honest but bridge to what you know: *"I haven't worked with Istio in production, but I understand the problem it solves — mTLS between services, traffic splitting for canary deployments, and fine-grained observability. In my current setup, we handle mTLS at the ALB/Ingress level and use ArgoCD Rollouts for canary. I'd be excited to learn Istio in a production context."*
+
+---
+
+## 18.6 Tools You Should Be Able to Name & Explain (Daily Toolkit)
+
+| Category | Tools You Use Daily | Quick Explanation |
+| :--- | :--- | :--- |
+| **Container Runtime** | Docker, containerd, BuildKit | BuildKit = parallel layer builds + GHA cache |
+| **Container Orchestration** | Kubernetes (Amazon EKS) | Manages pod scheduling, scaling, self-healing |
+| **IaC** | Terraform (HCL), Terraform Cloud/Atlantis | Declarative cloud provisioning with state management |
+| **CI/CD** | GitHub Actions, ArgoCD | Actions = build/test/scan; ArgoCD = GitOps deploy |
+| **Package Management** | Helm, Kustomize | Helm = templated charts; Kustomize = overlay patching |
+| **Observability** | Prometheus, Grafana, Loki, Jaeger, OTel | Metrics, dashboards, logs, distributed tracing |
+| **Security Scanning** | Trivy, Gitleaks, SonarQube | Container CVEs, secret detection, static analysis |
+| **Secrets** | AWS Secrets Manager, External Secrets Operator | Runtime injection, no secrets in Git |
+| **Cloud Provider** | AWS (EKS, Aurora, ElastiCache, SQS, DynamoDB, S3, IAM, VPC) | Core cloud services |
+| **CLI Tools** | `kubectl`, `helm`, `terraform`, `aws`, `argocd`, `k9s`, `git` | Daily terminal tools |
+| **Scripting** | Python, Bash/Shell | Automation scripts, CronJobs, FinOps |
+| **Collaboration** | Jira, Confluence, Slack, PagerDuty | Ticketing, docs, comms, incident alerting |
