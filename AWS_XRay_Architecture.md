@@ -1,109 +1,134 @@
-# The Master Whiteboard: X-Ray Vision of AWS, EKS, and Microservices
+# The Ultimate Enterprise Architecture: Complete Network & Dependency Map
 
-This diagram represents the exact physical and logical mapping of your microservices. It demonstrates how AWS networking (VPCs, Subnets, EC2 Nodes) perfectly overlaps with Kubernetes logic (Namespaces, Services, Pods).
+This document illustrates the entire AWS and Kubernetes ecosystem, leaving nothing out. It maps the sub-domains, the AWS VPC CNI network, the platform dependencies (like ArgoCD and External Secrets), and all 30+ domain microservices.
 
-## 1. The Ground-Level Architecture Diagram
+## 1. The Complete Ecosystem Diagram
 
 ```mermaid
 flowchart LR
-    Internet(("Internet Client")) --> R53["Route 53 DNS"]
-    
-    subgraph AWS["AWS Cloud (Region: eu-west-1)"]
+    subgraph Edge["Edge & DNS"]
+        direction TB
+        R53["AWS Route 53 (DNS)"]
+        Sub1["api.nexora.com<br/>(Commerce/Billing APIs)"]
+        Sub2["ops.nexora.com<br/>(Grafana, ArgoCD)"]
+        Sub3["admin.nexora.com<br/>(Internal Dashboards)"]
+    end
+
+    subgraph AWS["AWS Cloud (Production VPC)"]
+        WAF["AWS WAF<br/>(Firewall)"]
+        ALB["Shared AWS ALB<br/>(Application Load Balancer)"]
+        NAT["NAT Gateways<br/>(Outbound Internet)"]
         
-        subgraph VPC["Shared Production VPC (10.10.0.0/16)"]
+        subgraph EKS["Amazon EKS Cluster (Control Plane + Worker Nodes)"]
+            direction TB
             
-            subgraph Public["Public Subnets (Edge)"]
+            subgraph CoreAddons["kube-system (Core Networking)"]
                 direction TB
-                ALB["AWS ALB (SSL Terminated)"]
-                NAT["NAT Gateways (Egress)"]
+                CNI["AWS VPC CNI<br/>(Assigns Native VPC IPs to Pods)"]
+                CoreDNS["CoreDNS<br/>(Internal svc.cluster.local DNS)"]
+                KProxy["kube-proxy<br/>(iptables routing)"]
+                EBS["EBS CSI Driver<br/>(gp3 Volume Provisioner)"]
             end
             
-            subgraph Private["Private Subnets (EKS Cluster Nodes)"]
+            subgraph OpsNS["Platform Tooling Namespaces (Tier 1)"]
                 direction TB
-                
-                subgraph SysNG["System Node Group"]
-                    IngressCtrl["ingress-system<br/>(AWS ALB Controller)"]
-                end
-                
-                subgraph CommNG["Commerce Node Group (Graviton)"]
-                    direction TB
-                    Cart["cart-service<br/>(Python Pods)"]
-                    Pay["payment-service<br/>(Go Pods)"]
-                    Rest["auth, catalog, notif<br/>(8 Pods)"]
-                end
-                
-                subgraph GenNG["General Compute Node Group (Intel)"]
-                    direction TB
-                    Bill["billing-prod<br/>(30 Pods)"]
-                    CRM["crm-prod & telco-oss<br/>(90 Pods)"]
-                end
+                IngressNS["ingress-system<br/>• AWS ALB Controller<br/>• ExternalDNS"]
+                ArgoNS["argocd<br/>• ArgoCD Server & Repo Server"]
+                MonNS["monitoring<br/>• Prometheus, Grafana, Promtail"]
+                SecNS["security<br/>• External Secrets (ESO)<br/>• cert-manager"]
             end
             
-            subgraph Isolated["Isolated Subnets (Data)"]
+            subgraph AppNS["Domain Namespaces (Tier 2 Applications)"]
                 direction TB
-                DB_Comm[(Aurora PostgreSQL<br/>Commerce DBs)]
-                Redis[(ElastiCache Redis<br/>Cart State)]
+                CommNS["commerce-prod<br/>(Auth, Cart, Catalog, Payment, Notif)"]
+                BillNS["billing-prod<br/>(6 Services: Invoice, Tax, Ledger...)"]
+                CRMNS["crm-prod<br/>(8 Services: C360, Ticketing, Chat...)"]
+                OSSNS["telco-oss-prod<br/>(11+ Services: eSIM, Roaming...)"]
             end
         end
         
-        subgraph Serverless["AWS Serverless (Outside VPC)"]
+        subgraph AWS_Security["AWS Security & Identity"]
             direction TB
-            DDB[(DynamoDB Table)]
-            SQS[[SQS FIFO Queue]]
+            IAM["IAM OIDC Provider<br/>(IRSA for Pods)"]
+            KMS["AWS KMS<br/>(etcd Secret Encryption)"]
+            SM["AWS Secrets Manager"]
+        end
+        
+        subgraph Data["Stateful & Serverless Dependencies"]
+            direction TB
+            RDS[(Aurora PostgreSQL<br/>Dedicated Clusters per Domain)]
+            Elasti[(ElastiCache Redis<br/>Dedicated Clusters per Domain)]
+            DDB[(DynamoDB Tables)]
+            SQS[[SQS Event Queues]]
+            S3[(Amazon S3)]
         end
     end
 
-    %% Routing
-    R53 --> ALB
-    ALB -->|Target Group| IngressCtrl
-    IngressCtrl -->|/cart| Cart
-    IngressCtrl -->|/payment| Pay
-    IngressCtrl -->|/billing| Bill
+    %% Routing Flow
+    R53 --- Sub1 & Sub2 & Sub3
+    Sub1 & Sub2 & Sub3 --> WAF --> ALB --> IngressNS
+    IngressNS -->|Routes by path/host| CommNS & BillNS & CRMNS & OSSNS
     
-    %% DB
-    Cart -.->|TCP 6379| Redis
-    Pay -.->|TCP 5432| DB_Comm
+    %% Internal Dependencies
+    AppNS -.->|Allocates IP| CNI
+    AppNS -.->|Resolves svc names| CoreDNS
+    SecNS -.->|Updates Certs| R53
+    IngressNS -.->|ExternalDNS updates| R53
     
-    %% Serverless & Egress
-    Pay -.->|HTTPS| DDB
-    Pay -.->|HTTPS| SQS
-    Pay -.->|Outbound Bank API| NAT
+    %% Security Integrations
+    AppNS -.->|Assume Role via Token| IAM
+    SecNS -.->|Fetches Secrets| SM
     
-    %% Styling
+    %% Data Flow
+    AppNS --> RDS & Elasti & DDB & SQS & S3
+    
+    %% Egress
+    AppNS --> NAT
+    
+    classDef edge fill:#4c1d95,stroke:#a78bfa,stroke-width:2px,color:#fff;
     classDef aws fill:#ff9900,stroke:#232f3e,stroke-width:2px,color:#232f3e,font-weight:bold;
-    classDef vpc fill:#0369a1,stroke:#38bdf8,stroke-width:2px,color:#fff;
-    classDef pub fill:#bae6fd,stroke:#0284c7,stroke-width:1px,color:#0f172a;
-    classDef priv fill:#1e293b,stroke:#34d399,stroke-width:2px,color:#fff;
-    classDef iso fill:#7f1d1d,stroke:#ef4444,stroke-width:2px,color:#fff;
-    classDef k8s fill:#326ce5,stroke:#fff,stroke-width:1px,color:#fff;
-    classDef pod fill:#0ea5e9,stroke:#fff,stroke-width:1px,color:#fff;
+    classDef sec fill:#9f1239,stroke:#fb7185,stroke-width:2px,color:#fff;
+    classDef kube fill:#1e40af,stroke:#60a5fa,stroke-width:2px,color:#fff;
+    classDef ns fill:#0f172a,stroke:#38bdf8,stroke-width:1px,color:#fff;
+    classDef db fill:#065f46,stroke:#34d399,stroke-width:1px,color:#fff;
     
+    class Edge,Sub1,Sub2,Sub3 edge;
     class AWS aws;
-    class VPC vpc;
-    class Public pub;
-    class Private priv;
-    class Isolated iso;
-    class SysNG,CommNG,GenNG k8s;
-    class Cart,Pay,Rest,Bill,CRM,IngressCtrl pod;
+    class AWS_Security,IAM,KMS,SM sec;
+    class EKS,CoreAddons,CNI,CoreDNS,KProxy,EBS kube;
+    class OpsNS,AppNS,IngressNS,ArgoNS,MonNS,SecNS,CommNS,BillNS,CRMNS,OSSNS ns;
+    class Data,RDS,Elasti,DDB,SQS,S3 db;
 ```
 
 ---
 
-## 2. Step-by-Step Interview Narrative
+## 2. Exhaustive Technical Breakdown (The "Glue" Components)
 
-When asked to trace a request, walk through these 5 layers:
+To truly understand this architecture, you must understand the underlying dependencies that make Kubernetes functional on AWS.
 
-### 1. DNS & Subdomain Routing (The Outer Edge)
-*"The user navigates to `api.nexora.com/cart`. **Route 53** holds the A-Record for the `api` subdomain, which points to the **AWS Application Load Balancer (ALB)** living in our Public Subnets."*
+### 1. Sub-Domains, Edge Routing, and ExternalDNS
+Traffic doesn't magically reach the cluster. It requires DNS and load balancing:
+*   **Sub-Domains (Route 53):** We separate traffic logically. `api.nexora.com` handles all mobile/web customer traffic. `ops.nexora.com` is restricted to corporate VPN IP addresses and hosts Grafana and ArgoCD.
+*   **ExternalDNS (Inside `ingress-system`):** This Kubernetes add-on watches your Ingress resources. When you deploy a new microservice that needs a URL, ExternalDNS automatically makes an API call to AWS Route 53 to create the A-Record pointing to your ALB. You never configure DNS manually.
+*   **AWS ALB Controller:** Automatically provisions the physical AWS Load Balancer based on your Kubernetes Ingress YAML.
 
-### 2. The VPC & Kubernetes Bridge (Ingress)
-*"The ALB terminates SSL and forwards the traffic into our Private Subnets, hitting the EC2 instances (EKS Worker Nodes). Specifically, it hits the NodePorts opened by the **AWS Load Balancer Controller** pods running in the `ingress-system` namespace. The Ingress controller looks at the URL path (`/cart`) and uses Kubernetes internal rules to route traffic to the **Kubernetes Service** named `cart-service`."*
+### 2. The CNI & Internal Networking (`kube-system`)
+Kubernetes needs a network fabric to allow pods to communicate.
+*   **AWS VPC CNI:** Unlike Flannel or Calico, the AWS VPC CNI assigns native, routable AWS VPC IP addresses (Elastic Network Interfaces - ENIs) directly to every single Pod. This means a Pod in EKS is treated exactly like an EC2 instance by the AWS network.
+*   **CoreDNS:** The phonebook of the cluster. When the Commerce Cart service wants to talk to the Payment service, it doesn't use an IP. It calls `http://payment-service.commerce-prod.svc.cluster.local`. CoreDNS translates this to the target Pod's IP.
+*   **kube-proxy:** Manages the low-level `iptables` rules on the worker nodes to ensure traffic hitting a Service is successfully routed to the backend Pods.
 
-### 3. Kubernetes Logical Abstraction (Namespaces & Services)
-*"Inside the cluster, we use **Namespaces** to logically separate the 30 microservices. The 5 Commerce services live in `commerce-prod`, while the 6 Billing services live in `billing-prod`. The `cart-service` acts as an internal load balancer (ClusterIP). It uses iptables/kube-proxy to round-robin the traffic to the actual healthy **Pods** (e.g., `cart-pod-1` or `cart-pod-2`)."*
+### 3. The Security Integration Layer
+Security in EKS relies heavily on deep integration with AWS IAM.
+*   **IAM OIDC Provider (IRSA):** IAM Roles for Service Accounts. This is the cryptographic link between Kubernetes and AWS. It allows a Kubernetes Pod to generate a secure JSON Web Token (JWT), trade it with AWS STS, and receive temporary AWS permissions. No hardcoded access keys are used anywhere.
+*   **External Secrets Operator (ESO):** Lives in the `security` namespace. It syncs database passwords from AWS Secrets Manager and converts them into native Kubernetes Secrets just-in-time.
+*   **AWS KMS (etcd encryption):** Kubernetes stores all its state (and secrets) in a database called `etcd`. AWS KMS provides envelope encryption so that `etcd` is encrypted at rest.
+*   **cert-manager:** Automatically talks to Let's Encrypt (or AWS ACM) to rotate SSL/TLS certificates before they expire.
 
-### 4. Kubernetes Physical Layer (Node Groups & Pods)
-*"Namespaces are just logical, but we also enforce **physical node isolation** using EKS Node Groups with Taints and Tolerations. The `kube-system` pods run on dedicated system EC2 nodes. The 25 billing/CRM/OSS services run on a massive pool of General Compute EC2 nodes. Our 5 Commerce services run on a dedicated Node Group of Graviton EC2 instances. So when traffic hits `cart-pod-1`, that container is physically executing on a specific Commerce EC2 instance inside the Private Subnet."*
+### 4. Platform Operations (Tier 1 Tooling)
+*   **ArgoCD:** The GitOps engine. It constantly watches your Git repositories and compares them to the live EKS cluster state. If a developer manually edits a deployment via `kubectl`, ArgoCD immediately overwrites it to match Git (self-healing).
+*   **Prometheus / Promtail:** The observability engine. Prometheus scrapes metrics (CPU/RAM/Requests) from every pod every 15 seconds. Promtail tails the stdout/stderr logs of every container and ships them to Grafana Loki.
 
-### 5. Connecting to the Dependents (Databases & AWS Services)
-*"Once the code inside `cart-pod-1` executes, it needs to save the user's shopping cart. Because the pod is sitting in a Private Subnet, it can route traffic down into our **Isolated Subnets** to talk to the **ElastiCache Redis** cluster on port 6379. If this was the Payment Pod, it might need to write to **DynamoDB** or **SQS**. Because those are serverless, the pod's traffic leaves the EC2 instance, traverses the AWS backbone via VPC Endpoints, and authenticates to DynamoDB securely using its IRSA (IAM Role for Service Account) token."*
+### 5. Multi-Tenant Applications & Databases (Your Tier 2 Scope)
+*   **Domain Namespaces:** The 30 microservices are segmented into namespaces (`commerce-prod`, `billing-prod`, etc.). Kubernetes **NetworkPolicies** govern these borders (e.g., stopping a compromised CRM pod from talking to the Commerce Payment pod).
+*   **App-Level Dependencies:** Each domain has its own dedicated AWS databases. Aurora for relational data, ElastiCache Redis for transient caching, DynamoDB for serverless NoSQL locks, and SQS for decoupled asynchronous events.
