@@ -22,6 +22,7 @@
 16. [Disaster Recovery, Backup & High Availability Strategy](#16-disaster-recovery-backup--high-availability-strategy)
 17. [Git Branching Strategy & Code Review Culture](#17-git-branching-strategy--code-review-culture)
 18. [Interview Preparation: Day-to-Day, Key Numbers & Anticipated Follow-Up Questions](#18-interview-preparation-day-to-day-key-numbers--anticipated-follow-up-questions)
+19. [The Master Whiteboard: X-Ray Vision of AWS, EKS, and Microservices](#19-the-master-whiteboard-x-ray-vision-of-aws-eks-and-microservices)
 
 ---
 
