@@ -5,116 +5,71 @@ This diagram represents the exact physical and logical mapping of your microserv
 ## 1. The Ground-Level Architecture Diagram
 
 ```mermaid
-flowchart TB
-    Internet(("Internet Client<br/>api.nexora.com/cart"))
-
+flowchart LR
+    Internet(("Internet Client")) --> R53["Route 53 DNS"]
+    
     subgraph AWS["AWS Cloud (Region: eu-west-1)"]
-        direction TB
-        R53["Route 53 DNS<br/>A-Record: api.nexora.com"]
         
-        subgraph VPC["Shared Production VPC (CIDR: 10.10.0.0/16)"]
-            direction TB
+        subgraph VPC["Shared Production VPC (10.10.0.0/16)"]
             
-            subgraph Public["Public Subnets (Multi-AZ)"]
-                direction LR
-                ALB["AWS Application Load Balancer<br/>(Listens on 443, SSL Terminated)"]
-                NAT["NAT Gateways<br/>(Egress to Stripe/Visa)"]
+            subgraph Public["Public Subnets (Edge)"]
+                direction TB
+                ALB["AWS ALB (SSL Terminated)"]
+                NAT["NAT Gateways (Egress)"]
             end
-
-            subgraph Private["Private Subnets (Multi-AZ: 10.10.10.0/24 & 10.10.11.0/24)"]
+            
+            subgraph Private["Private Subnets (EKS Cluster Nodes)"]
                 direction TB
                 
-                subgraph EKS["Amazon EKS Cluster (Control Plane managed by AWS)"]
+                subgraph SysNG["System Node Group"]
+                    IngressCtrl["ingress-system<br/>(AWS ALB Controller)"]
+                end
+                
+                subgraph CommNG["Commerce Node Group (Graviton)"]
                     direction TB
-                    
-                    subgraph NG_Sys["EC2 Node Group: 'System-Nodes' (m5.large)"]
-                        direction LR
-                        subgraph NS_Sys["Namespace: ingress-system"]
-                            IngressCtrl["K8s Pods: AWS Load Balancer Controller"]
-                        end
-                        subgraph NS_Kube["Namespace: kube-system"]
-                            CoreDNS["K8s Pods: CoreDNS (Internal Service Discovery)"]
-                        end
-                    end
-
-                    subgraph NG_Comm["EC2 Node Group: 'Commerce-Nodes' (c6g.2xlarge - Graviton)"]
-                        direction TB
-                        subgraph NS_Comm["Namespace: commerce-prod (Your Team)"]
-                            direction TB
-                            
-                            subgraph Svc_Cart["K8s Service: cart-service (ClusterIP)"]
-                                direction LR
-                                Pod_Cart1("K8s Pod: cart-5x7q (Python)")
-                                Pod_Cart2("K8s Pod: cart-9y2p (Python)")
-                            end
-                            
-                            subgraph Svc_Pay["K8s Service: payment-service (ClusterIP)"]
-                                direction LR
-                                Pod_Pay1("K8s Pod: pay-1a2b (Go Binary)")
-                                Pod_Pay2("K8s Pod: pay-3c4d (Go Binary)")
-                            end
-                            
-                            subgraph Other_Comm["Other Commerce Services"]
-                                direction LR
-                                Svc_Auth["auth-service<br/>(4 Pods)"]
-                                Svc_Cat["catalog-service<br/>(4 Pods)"]
-                                Svc_Notif["notif-disp<br/>(2 Pods)"]
-                            end
-                        end
-                    end
-
-                    subgraph NG_Gen["EC2 Node Group: 'General-Compute' (m6i.4xlarge)"]
-                        direction TB
-                        subgraph NS_Bill["Namespace: billing-prod"]
-                            Svc_Bill["6 K8s Services<br/>~30 Pods running on these EC2s"]
-                        end
-                        subgraph NS_CRM["Namespace: crm-prod"]
-                            Svc_CRM["8 K8s Services<br/>~40 Pods running on these EC2s"]
-                        end
-                        subgraph NS_OSS["Namespace: telco-oss-prod"]
-                            Svc_OSS["11+ K8s Services<br/>~50 Pods running on these EC2s"]
-                        end
-                    end
-                    
+                    Cart["cart-service<br/>(Python Pods)"]
+                    Pay["payment-service<br/>(Go Pods)"]
+                    Rest["auth, catalog, notif<br/>(8 Pods)"]
+                end
+                
+                subgraph GenNG["General Compute Node Group (Intel)"]
+                    direction TB
+                    Bill["billing-prod<br/>(30 Pods)"]
+                    CRM["crm-prod & telco-oss<br/>(90 Pods)"]
                 end
             end
-
-            subgraph Isolated["Isolated Subnets (Multi-AZ: 10.10.20.0/24) - NO INTERNET"]
-                direction LR
-                DB_Comm[(Aurora PostgreSQL<br/>auth_db, catalog_db)]
-                Redis_Cart[(ElastiCache Redis<br/>Cart State)]
-                DB_Bill[(Aurora PostgreSQL<br/>Billing Data)]
+            
+            subgraph Isolated["Isolated Subnets (Data)"]
+                direction TB
+                DB_Comm[(Aurora PostgreSQL<br/>Commerce DBs)]
+                Redis[(ElastiCache Redis<br/>Cart State)]
             end
         end
         
-        subgraph Serverless["AWS Serverless / API (Outside VPC)"]
-            direction LR
-            SQS[[SQS FIFO Queue<br/>Payment Events]]
-            DDB[(DynamoDB Table<br/>Payment Ledger)]
+        subgraph Serverless["AWS Serverless (Outside VPC)"]
+            direction TB
+            DDB[(DynamoDB Table)]
+            SQS[[SQS FIFO Queue]]
         end
     end
 
-    %% External routing
-    Internet --> R53
-    R53 -->|Resolves to| ALB
-    ALB -->|Target Group routes to NodePorts| IngressCtrl
-
-    %% Internal Ingress Routing
-    IngressCtrl -->|Evaluates path /cart| Svc_Cart
-    IngressCtrl -->|Evaluates path /payment| Svc_Pay
-    IngressCtrl -->|Evaluates path /billing| Svc_Bill
-
-    %% EKS to Database / Serverless Routing
-    Pod_Cart1 -.->|TCP 6379| Redis_Cart
-    Pod_Cart2 -.->|TCP 6379| Redis_Cart
+    %% Routing
+    R53 --> ALB
+    ALB -->|Target Group| IngressCtrl
+    IngressCtrl -->|/cart| Cart
+    IngressCtrl -->|/payment| Pay
+    IngressCtrl -->|/billing| Bill
     
-    Pod_Pay1 -.->|TCP 5432| DB_Comm
-    Pod_Pay2 -.->|IAM/HTTPS| DDB
-    Pod_Pay1 -.->|IAM/HTTPS| SQS
+    %% DB
+    Cart -.->|TCP 6379| Redis
+    Pay -.->|TCP 5432| DB_Comm
     
-    %% Egress Routing
-    Pod_Pay2 -.->|Outbound Bank API| NAT
+    %% Serverless & Egress
+    Pay -.->|HTTPS| DDB
+    Pay -.->|HTTPS| SQS
+    Pay -.->|Outbound Bank API| NAT
     
+    %% Styling
     classDef aws fill:#ff9900,stroke:#232f3e,stroke-width:2px,color:#232f3e,font-weight:bold;
     classDef vpc fill:#0369a1,stroke:#38bdf8,stroke-width:2px,color:#fff;
     classDef pub fill:#bae6fd,stroke:#0284c7,stroke-width:1px,color:#0f172a;
@@ -126,10 +81,10 @@ flowchart TB
     class AWS aws;
     class VPC vpc;
     class Public pub;
-    class Private,EKS priv;
+    class Private priv;
     class Isolated iso;
-    class NS_Comm,NS_Sys,NS_Kube,NS_Bill,NS_CRM,NS_OSS,Other_Comm k8s;
-    class Pod_Cart1,Pod_Cart2,Pod_Pay1,Pod_Pay2 pod;
+    class SysNG,CommNG,GenNG k8s;
+    class Cart,Pay,Rest,Bill,CRM,IngressCtrl pod;
 ```
 
 ---
