@@ -1,15 +1,15 @@
 # The Master Cloud & DevOps Engineering Blueprint
-### Ground-Level Enterprise Architecture, Multi-Tenant Kubernetes, CI/CD Pipelines, and Operational Reliability
+### Ground-Level Enterprise Architecture, Multi-Tenant Kubernetes, Workload Sizing Math, CI/CD Pipelines, and Operational Reliability
 
 ---
 
 ## Table of Contents
 1. [Enterprise Architecture & Team Operating Model](#1-enterprise-architecture--team-operating-model)
    - 1.1 The Enterprise Context: Nexora Global Telecommunications
-   - 1.2 The 4 Organizational DevOps Archetypes
+   - 1.2 The 4 Organizational DevOps Archetypes in Modern Tech
    - 1.3 The 3-Tier Enterprise Structure
    - 1.4 Inside the 7-Member DevOps Squad: T-Shaped Dynamics & The On-Call Shield
-   - 1.5 The 2-Week Agile SDLC Cadence: Two-Board Operating Model (Diagram)
+   - 1.5 The 2-Week Agile SDLC Cadence: Two-Board Operating Model
    - 1.6 Cross-Team RACI Responsibility Matrix
    - 1.7 The Strategic Role of QA / SDET Engineers in Automated GitOps
 2. [The 5 Core Microservices: Ground-Level Anatomy & Execution Runtimes](#2-the-5-core-microservices-ground-level-anatomy--execution-runtimes)
@@ -19,43 +19,52 @@
 3. [Enterprise Cloud & AWS Infrastructure Isolation Strategy](#3-enterprise-cloud--aws-infrastructure-isolation-strategy)
    - 3.1 Domain-Driven Multi-Account Cloud Architecture
    - 3.2 Logical vs. Physical Resource Isolation
-   - 3.3 Blast Radius Protection: Dedicated vs. Shared Components
+   - 3.3 Blast Radius Protection & PCI-DSS Scope Containment
    - 3.4 Cross-Domain Synchronous & Asynchronous Communication
-4. [Multi-Tenant Kubernetes (Amazon EKS) Architecture & Network Flow](#4-multi-tenant-kubernetes-amazon-eks-architecture--network-flow)
+4. [Multi-Tenant Kubernetes (Amazon EKS) Architecture, Node Groups & Security](#4-multi-tenant-kubernetes-amazon-eks-architecture-node-groups--security)
    - 4.1 Multi-Tenant Cluster Namespace Architecture
-   - 4.2 Ground-Level Packet Journey: Browser to Container Worker
-   - 4.3 Kubernetes Developer RBAC Configuration
-   - 4.4 Zero-Trust Network Isolation (NetworkPolicies)
-   - 4.5 IAM Roles for Service Accounts (IRSA) Deep Dive
-   - 4.6 Secrets Management: External Secrets Operator (ESO)
-5. [Continuous Integration (CI) Pipeline Engineering](#5-continuous-integration-ci-pipeline-engineering)
-   - 5.1 Shift-Left Security & Pre-Build vs. Post-Build Gates
-   - 5.2 Production Multi-Stage Dockerfile Pattern
-   - 5.3 Complete Reusable GitHub Actions CI Workflow
-   - 5.4 Build Optimization: Slashing CI Duration from 18m to 3.5m
-6. [Continuous Delivery (CD), GitOps & 4-Tier Promotion Engine](#6-continuous-delivery-cd-gitops--4-tier-promotion-engine)
-   - 6.1 The 4-Tier Environment Promotion Pipeline
-   - 6.2 GitOps Kustomize Repository Directory Layout
-   - 6.3 ArgoCD Production Application Configuration
-   - 6.4 Zero-Downtime Pod Lifecycle & Graceful Termination
-   - 6.5 Promotion Failure Handling & Automated Rollback
-7. [Production Observability, Metrics & Telemetry Deep Dive](#7-production-observability-metrics--telemetry-deep-dive)
+   - 4.2 Production Node Group Topology & Hard Compute Isolation (Taints & Tolerations)
+   - 4.3 Node Instance Sizing: Graviton4 (ARM) vs. Intel Decisions
+   - 4.4 Real-World vs. Textbook Multi-Tenancy (CNI NetworkPolicy, Admission Control, PCI Taints)
+   - 4.5 Ground-Level Packet Journey: Browser to Container Worker
+   - 4.6 Kubernetes Developer RBAC Configuration
+   - 4.7 Zero-Trust Network Isolation (NetworkPolicies)
+   - 4.8 IAM Roles for Service Accounts (IRSA) Deep Dive
+   - 4.9 Secrets Management: External Secrets Operator (ESO)
+5. [Workload Sizing, HPA Mathematics & Karpenter Autoscaling](#5-workload-sizing-hpa-mathematics--karpenter-autoscaling)
+   - 5.1 The "3 Replicas Floor" vs. Peak Capacity Mathematics
+   - 5.2 Active Users vs. Request Throughput Funnel
+   - 5.3 Per-Service Autoscaling Ceiling & Metric Configuration Matrix
+   - 5.4 The Nested Dual-Autoscaler Architecture (HPA + Karpenter)
+   - 5.5 Aligning Namespace ResourceQuotas with Node Group Capacity
+6. [Continuous Integration (CI) Pipeline Engineering](#6-continuous-integration-ci-pipeline-engineering)
+   - 6.1 Shift-Left Security & Pre-Build vs. Post-Build Gates
+   - 6.2 Production Multi-Stage Dockerfile Pattern
+   - 6.3 Complete Reusable GitHub Actions CI Workflow
+   - 6.4 Build Optimization: Slashing CI Duration from 18m to 3.5m
+7. [Continuous Delivery (CD), GitOps & 4-Tier Promotion Engine](#7-continuous-delivery-cd-gitops--4-tier-promotion-engine)
+   - 7.1 The 4-Tier Environment Promotion Pipeline
+   - 7.2 GitOps Kustomize Repository Directory Layout
+   - 7.3 ArgoCD Production Application Configuration
+   - 7.4 Zero-Downtime Pod Lifecycle & Graceful Termination
+   - 7.5 Promotion Failure Handling & Automated Rollback
+8. [Production Observability, Metrics & Telemetry Deep Dive](#8-production-observability-metrics--telemetry-deep-dive)
    - 7.1 The Observability Architecture Stack
-   - 7.2 The 4 Golden Signals: Production PromQL Formulas
-   - 7.3 Production Alertmanager Configuration
-8. [Operational Automations, Python Scripting & FinOps](#8-operational-automations-python-scripting--finops)
-   - 8.1 Non-Production Nightly Auto-Scaling Script (Python + K8s API)
-   - 8.2 AWS ECR Image Retention Lifecycle Policy
-   - 8.3 Orphaned EBS Volume & Snapshot Cleanup
-   - 8.4 Bastion Host Hardening with Ansible
-9. [The Production Incident Triage Playbook (5 Real-World Incidents)](#9-the-production-incident-triage-playbook-5-real-world-incidents)
-   - 9.1 Incident 1: HTTP 504 Gateway Timeout (Redis Pool Starvation)
-   - 9.2 Incident 2: Pods CrashLooping / Exit Code 137 (JVM OOMKilled)
-   - 9.3 Incident 3: CoreDNS CPU Throttling & Cascading Lookups
-   - 9.4 Incident 4: AWS IRSA AccessDenied on Boot (OIDC Thumbprint Expiry)
-   - 9.5 Incident 5: GitOps Manifest Drift & Infinite Sync Loop
-   - 9.6 Ground-Level CLI Triage Commands Reference
-10. [The 5 Critical Architectural Challenges & Engineering Solutions](#10-the-5-critical-architectural-challenges--engineering-solutions)
+   - 8.2 The 4 Golden Signals: Production PromQL Formulas
+   - 8.3 Production Alertmanager Configuration
+9. [Operational Automations, Python Scripting & FinOps](#9-operational-automations-python-scripting--finops)
+   - 9.1 Non-Production Nightly Auto-Scaling Script (Python + K8s API)
+   - 9.2 AWS ECR Image Retention Lifecycle Policy
+   - 9.3 Orphaned EBS Volume & Snapshot Cleanup
+   - 9.4 Bastion Host Hardening with Ansible
+10. [The Production Incident Triage Playbook (5 Real-World Incidents)](#10-the-production-incident-triage-playbook-5-real-world-incidents)
+    - 10.1 Incident 1: HTTP 504 Gateway Timeout (Redis Pool Starvation)
+    - 10.2 Incident 2: Pods CrashLooping / Exit Code 137 (JVM OOMKilled)
+    - 10.3 Incident 3: CoreDNS CPU Throttling & Cascading Lookups
+    - 10.4 Incident 4: AWS IRSA AccessDenied on Boot (OIDC Thumbprint Expiry)
+    - 10.5 Incident 5: GitOps Manifest Drift & Infinite Sync Loop
+    - 10.6 Ground-Level CLI Triage Commands Reference
+11. [The 5 Critical Architectural Challenges & Engineering Solutions](#11-the-5-critical-architectural-challenges--engineering-solutions)
 
 ---
 
@@ -399,6 +408,8 @@ flowchart LR
 
 ### 3.1 Domain-Driven Multi-Account Cloud Architecture
 
+Enterprise architecture separates business units into dedicated AWS accounts under **AWS Organizations / Control Tower**:
+
 ```mermaid
 flowchart TB
     subgraph AWSOrg["AWS ORGANIZATIONS / LANDING ZONE"]
@@ -446,10 +457,11 @@ flowchart TB
 
 ---
 
-### 3.3 Blast Radius Protection: Dedicated vs. Shared Components
+### 3.3 Blast Radius Protection & PCI-DSS Scope Containment
 
 1. **Why Database Tables Are Never Shared Across Domains**: Sharing a single database across microservices creates tight coupling. A slow query or table lock in a reporting service could exhaust DB connections, knocking out payment processing and violating PCI-DSS isolation rules.
 2. **Why Redis Clusters Are Physically Separated**: Redis executes in-memory. If memory is exhausted, its eviction policy (`allkeys-lru`) discards keys. If Auth and Cart shared a cluster, a flash sale spiking cart activity would evict user authentication tokens, logging out users across the platform.
+3. **PCI-DSS Compliance Isolation for Payment Processing**: In an enterprise handling credit card transactions, Qualified Security Assessors (QSAs) require strict Cardholder Data Environment (CDE) segmentation. Placing payment pods on dedicated, tainted node groups (`commerce-payment-ng`) or inside a dedicated AWS account eliminates the risk of adjacent containers sniffing network sockets or accessing shared host memory.
 
 ---
 
@@ -461,9 +473,11 @@ When services in the Commerce domain interact with the other 25+ services across
 
 ---
 
-# 4. Multi-Tenant Kubernetes (Amazon EKS) Architecture & Network Flow
+# 4. Multi-Tenant Kubernetes (Amazon EKS) Architecture, Node Groups & Security
 
 ### 4.1 Multi-Tenant Cluster Namespace Architecture
+
+In production, all 30+ services operate in a **Multi-Tenant Amazon EKS Cluster** managed by the Central Cloud Team, partitioned by domain namespaces:
 
 ```mermaid
 flowchart TD
@@ -511,7 +525,77 @@ flowchart TD
 
 ---
 
-### 4.2 Ground-Level Packet Journey: Browser to Container Worker
+### 4.2 Production Node Group Topology & Hard Compute Isolation (Taints & Tolerations)
+
+In real enterprise clusters, **namespaces are soft logical boundaries** (they share the Linux kernel, CPU cores, and memory bus). A memory leak in `crm-prod` can starve `commerce-prod` pods on the same physical host.
+
+To enforce **hard compute isolation**, each domain runs on its own dedicated **Managed Node Group** using Kubernetes **Taints, Tolerations, and Node Affinity**:
+
+```mermaid
+flowchart TD
+    subgraph EKSCluster["EKS Cluster Worker Hardware Layer"]
+        direction TB
+        
+        subgraph NG_System["system-ng (General Cluster Services)"]
+            N_Sys["Controllers, CoreDNS, Ingress, Monitoring Agents<br/>Instance: m7g.large (ARM Graviton4)"]
+        end
+
+        subgraph NG_Commerce["commerce-ng (Domain 1 Workloads)"]
+            N_Com["Auth, Catalog, Cart, Notification Pods<br/>Instance: m7g.2xlarge (ARM Graviton4)<br/>Toleration: domain=commerce:NoSchedule"]
+        end
+
+        subgraph NG_Payment["commerce-payment-ng (PCI-DSS Isolated)"]
+            N_Pay["Payment Gateway Pods ONLY<br/>Taint: dedicated=pci-payment:NoSchedule<br/>Instance: m7i.xlarge (Dedicated Isolated Hardware)"]
+        end
+
+        subgraph NG_Billing["billing-ng (Domain 2 Workloads)"]
+            N_Bill["Billing & Invoicing Pods<br/>Instance: m7g.xlarge (ARM Graviton4)"]
+        end
+
+        subgraph NG_CRM["crm-ng (Domain 3 Workloads)"]
+            N_CRM["CRM & Customer 360 Pods<br/>Instance: r7g.xlarge (Memory Optimized)"]
+        end
+
+        subgraph NG_OSS["telco-oss-ng (Domain 4 Telecom OSS)"]
+            N_OSS["eSIM & Network Activation Pods (Largest Pool)<br/>Instance: m7g.4xlarge (High Concurrency)"]
+        end
+    end
+
+    classDef ng fill:#1e293b,stroke:#0284c7,stroke-width:1.5px,color:#f8fafc;
+    classDef pci fill:#7f1d1d,stroke:#ef4444,stroke-width:2px,color:#ffffff;
+    class NG_System,NG_Commerce,NG_Billing,NG_CRM,NG_OSS ng;
+    class NG_Payment pci;
+```
+
+| Node Group Name | Target Services | Instance Type & Architecture | Sizing & Isolation Rationale |
+| :--- | :--- | :--- | :--- |
+| **`system-ng`** | CoreDNS, AWS ALB Controller, Karpenter, Prometheus/Loki agents | `m7g.large` (Graviton4, ARM) | Dedicated system pool. Ensures platform controllers never compete for CPU during application traffic spikes. |
+| **`commerce-ng`** | `auth-service`, `catalog-service`, `cart-service`, `notif-service` | `m7g.2xlarge` (8 vCPU / 32GiB) | Best price-performance for standard containerized microservices. Bin-packs commerce pods across 3 AZs. |
+| **`commerce-payment-ng`** | `payment-service` ONLY | `m7i.xlarge` (4 vCPU / 16GiB Intel) | **Dedicated Tainted Hardware**: Tainted with `dedicated=pci-payment:NoSchedule`. Closes the PCI-DSS audit gap by physically preventing other containers from co-locating on the same kernel. |
+| **`billing-ng`** | 6 Billing Microservices | `m7g.xlarge` (4 vCPU / 16GiB) | Sized for billing calculation workers and invoice generation pipelines. |
+| **`crm-ng`** | 8 CRM Microservices | `r7g.xlarge` (Memory-Optimized) | Sized for high-memory session caches and customer lookup aggregations. |
+| **`telco-oss-ng`** | 11+ Telecom OSS Services | `m7g.4xlarge` (16 vCPU / 64GiB) | Largest workload pool handling high-throughput eSIM and network provisioning events. |
+
+---
+
+### 4.3 Node Instance Sizing: Graviton4 (ARM) vs. Intel Decisions
+
+1. **Graviton4 (`m7g` / `r7g` family)**: Default choice for all modern containerized microservices (Node.js, Go, Python). Delivers **~20–40% better price-performance** over x86.
+2. **Intel x86 (`m7i` / `m6i` family)**: Retained specifically for services with legacy C/C++ native bindings (JNI) or unverified ARM compatibility in third-party banking/telecom SDKs.
+
+---
+
+### 4.4 Real-World vs. Textbook Multi-Tenancy
+
+In an enterprise interview, demonstrating knowledge of real-world operational nuances separates seniors from junior candidates:
+
+1. **AWS VPC CNI NetworkPolicy Support**: In AWS EKS, NetworkPolicies are not enforced out of the box unless either **AWS VPC CNI native NetworkPolicy support** is explicitly enabled or a third-party CNI (Calico / Cilium) is installed. Without this, NetworkPolicy YAMLs in Git are silently ignored by the cluster.
+2. **Admission Controllers (Kyverno / OPA Gatekeeper / PSA)**: Real hardened clusters run admission controllers to enforce cluster-wide security baselines (blocking privileged containers, forbidding root execution `runAsNonRoot: true`, preventing `hostPath` mounts).
+3. **EKS Provisioned Control Plane**: For predicted national telecom traffic surges (e.g., nationwide number porting day or major iPhone pre-orders), AWS offers **Provisioned Control Plane capacity** (Standard up to 8XL) to guarantee API server and etcd headroom.
+
+---
+
+### 4.5 Ground-Level Packet Journey: Browser to Container Worker
 
 ```mermaid
 flowchart TD
@@ -529,7 +613,7 @@ flowchart TD
 
 ---
 
-### 4.3 Kubernetes Developer RBAC Configuration
+### 4.6 Kubernetes Developer RBAC Configuration
 
 ```yaml
 # developer-readonly-rbac.yaml
@@ -567,7 +651,7 @@ roleRef:
 
 ---
 
-### 4.4 Zero-Trust Network Isolation (NetworkPolicies)
+### 4.7 Zero-Trust Network Isolation (NetworkPolicies)
 
 ```yaml
 # network-policy-payment.yaml
@@ -603,7 +687,7 @@ spec:
 
 ---
 
-### 4.5 IAM Roles for Service Accounts (IRSA) Deep Dive
+### 4.8 IAM Roles for Service Accounts (IRSA) Deep Dive
 
 ```mermaid
 flowchart TD
@@ -652,7 +736,7 @@ metadata:
 
 ---
 
-### 4.6 Secrets Management: External Secrets Operator (ESO)
+### 4.9 Secrets Management: External Secrets Operator (ESO)
 
 ```yaml
 # 1. ClusterSecretStore (Authenticates via IRSA)
@@ -698,9 +782,106 @@ spec:
 
 ---
 
-## 5. Continuous Integration (CI) Pipeline Engineering
+# 5. Workload Sizing, HPA Mathematics & Karpenter Autoscaling
 
-### 5.1 Shift-Left Security & Pre-Build vs. Post-Build Gates
+### 5.1 The "3 Replicas Floor" vs. Peak Capacity Mathematics
+
+A common source of confusion in interview rounds is understanding **Minimum Replicas** vs. **Maximum Capacity**:
+
+1. **Minimum Floor (3 Replicas)**: Exists strictly for **High Availability (HA)** and **fault tolerance**, not for handling peak traffic volume. One pod is placed in each of the 3 AWS Availability Zones (`topologySpreadConstraints`). If an entire data center loses power, 2 replicas remain active. It also allows rolling deployments to replace one pod at a time without dropping below 100% capacity. Running 20+ pods 24/7 during off-peak hours (e.g. 3:00 AM) wastes thousands of dollars in compute.
+2. **Maximum Ceiling (HPA Dynamic Burst)**: Absorbs daytime traffic spikes. As traffic arrives, the Horizontal Pod Autoscaler (HPA) monitors CPU/QPS metrics and scales the deployment from 3 up to 20+ replicas dynamically.
+
+---
+
+### 5.2 Active Users vs. Request Throughput Funnel
+
+**50,000 active concurrent users does NOT equal 50,000 requests per second (RPS).**
+
+In a web application:
+- An active user spends 20–60 seconds reading a page, typing details, or reviewing plans. They generate roughly **1 request every 2 to 3 seconds**.
+- User drop-off occurs across the e-commerce purchase funnel:
+  - **100% of users** hit `auth-service` and `catalog-service` during initial browsing.
+  - **~20% of users** proceed to add items and interact with `cart-service` (~2,000–3,000 RPS).
+  - **~5% of users** reach the final checkout step with `payment-service` (~500–800 RPS).
+
+```
+[ 50,000 Browsing Users ] ──► [ Catalog Service: ~8,000 RPS ] (Cacheable, Needs ~25 Pods)
+                                      │ (20% proceed to checkout)
+                                      ▼
+                             [ Cart Service: ~2,500 RPS ] (Needs ~15–18 Pods)
+                                      │ (5% reach payment)
+                                      ▼
+                             [ Payment Service: ~600 RPS ] (Needs ~6–8 Pods)
+```
+
+At **~150 requests/sec per pod** for a Python FastAPI container, 2,500 RPS requires `2500 / 150 ≈ 17 pods`. Thus, setting `minReplicas: 3` and `maxReplicas: 20` is mathematically sound.
+
+---
+
+### 5.3 Per-Service Autoscaling Ceiling & Metric Configuration Matrix
+
+| Microservice | Min Replicas (Floor) | Max Replicas (Peak) | Primary Scaling Metric | Autoscaling Engine & Rationale |
+| :--- | :---: | :---: | :--- | :--- |
+| **`auth-service`** | **5** | **30** | CPU &gt; 60% OR HTTP RPS &gt; 250/pod | **HPA**: Authenticates every page session; high baseline traffic. |
+| **`catalog-service`** | **5** | **30** | CPU &gt; 70% OR HTTP RPS &gt; 300/pod | **HPA**: Heaviest read traffic across entire site. |
+| **`cart-service`** | **3** | **20** | HTTP Requests/sec via Prometheus Adapter | **HPA**: Request-driven scaling (CPU lags behind sudden traffic bursts). |
+| **`payment-service`** | **3** | **15** | CPU &gt; 50% OR Active Connections &gt; 100 | **HPA**: Isolated on dedicated tainted hardware node group. |
+| **`notif-service`** | **2** | **20** | `ApproximateNumberOfMessagesVisible` &gt; 500 | **KEDA**: Queue-driven worker. CPU remains 0% while idle, so HPA fails; KEDA scales directly on SQS queue depth. |
+
+---
+
+### 5.4 The Nested Dual-Autoscaler Architecture (HPA + Karpenter)
+
+Kubernetes scaling operates at two interconnected layers:
+
+```mermaid
+flowchart TD
+    subgraph TrafficLayer["Traffic Ingestion Layer"]
+        Traffic["User Traffic Surge Arrives"]
+    end
+
+    subgraph PodAutoscaler["Layer 1: Pod Layer Autoscaler (HPA / KEDA)"]
+        HPA["HPA detects CPU/QPS threshold breach;<br/>Calculates desired replicas: 3 -> 18 pods"]
+        ScalePods["Deployment creates 15 new Pods"]
+        HPA --> ScalePods
+    end
+
+    subgraph Scheduler["Kubernetes Scheduler"]
+        Pending["Nodes fill up -> 8 Pods enter 'Pending' status"]
+    end
+
+    subgraph NodeAutoscaler["Layer 2: Node Layer Autoscaler (Karpenter)"]
+        Karpenter["Karpenter observes Pending Pods & resource requests;<br/>Launches optimal EC2 worker node (e.g. 1x m7g.2xlarge) in ~45 seconds"]
+        NodeReady["Node joins EKS Cluster -> Pods scheduled & Ready"]
+        Karpenter --> NodeReady
+    end
+
+    subgraph ScaleDown["Off-Peak Scale Down & Consolidation"]
+        Drain["Traffic drops -> HPA reduces replicas to 3;<br/>Karpenter cordons & drains underutilized EC2 nodes to $0 spend"]
+    end
+
+    Traffic --> HPA
+    ScalePods --> Pending
+    Pending --> Karpenter
+    NodeReady --> Drain
+
+    classDef stage fill:#1e293b,stroke:#0284c7,stroke-width:1.5px,color:#f8fafc;
+    class TrafficLayer,PodAutoscaler,Scheduler,NodeAutoscaler,ScaleDown stage;
+```
+
+---
+
+### 5.5 Aligning Namespace ResourceQuotas with Node Group Capacity
+
+A `ResourceQuota` must be mathematically aligned with the underlying node group compute rather than guessed:
+- If `commerce-ng` runs 4 &times; `m7g.2xlarge` nodes (8 vCPU / 32GiB RAM each = **32 vCPUs / 128GiB RAM total**):
+- Setting `ResourceQuota` to `requests.cpu: "20"`, `requests.memory: "40Gi"` guarantees that baseline workloads never exceed 60% of the node group, leaving **12 vCPUs and 88GiB of RAM reserved for HPA burst scaling**.
+
+---
+
+# 6. Continuous Integration (CI) Pipeline Engineering
+
+### 6.1 Shift-Left Security & Pre-Build vs. Post-Build Gates
 
 | Stage | Security & Quality Gate Tool | Enforcement Mechanism & Failure Threshold |
 | :--- | :--- | :--- |
@@ -712,7 +893,7 @@ spec:
 
 ---
 
-### 5.2 Production Multi-Stage Dockerfile Pattern
+### 6.2 Production Multi-Stage Dockerfile Pattern
 
 ```dockerfile
 # ========================================================
@@ -754,7 +935,7 @@ CMD ["node", "dist/main.js"]
 
 ---
 
-### 5.3 Complete Reusable GitHub Actions CI Workflow
+### 6.3 Complete Reusable GitHub Actions CI Workflow
 
 ```yaml
 # .github/workflows/reusable-microservice-ci.yml
@@ -867,7 +1048,7 @@ jobs:
 
 ---
 
-### 5.4 Build Optimization: Slashing CI Duration from 18m to 3.5m
+### 6.4 Build Optimization: Slashing CI Duration from 18m to 3.5m
 
 1. **Docker BuildKit Layer Caching (`type=gha`)**: By caching intermediate Docker build stages directly in the GitHub Actions cache backend, unchanged package compilation layers are restored in seconds.
 2. **Multi-Stage Build Isolation**: By separating dependency compilation (`npm ci`, Maven build) from the final minimal runner image, output images dropped from ~900MB to ~85MB.
@@ -875,9 +1056,9 @@ jobs:
 
 ---
 
-# 6. Continuous Delivery (CD), GitOps & 4-Tier Promotion Engine
+# 7. Continuous Delivery (CD), GitOps & 4-Tier Promotion Engine
 
-### 6.1 The 4-Tier Environment Promotion Pipeline
+### 7.1 The 4-Tier Environment Promotion Pipeline
 
 ```mermaid
 flowchart TD
@@ -936,7 +1117,7 @@ flowchart TD
 
 ---
 
-### 6.2 GitOps Kustomize Repository Directory Layout
+### 7.2 GitOps Kustomize Repository Directory Layout
 
 ```
 gitops-manifests/
@@ -964,7 +1145,7 @@ gitops-manifests/
 
 ---
 
-### 6.3 ArgoCD Production Application Configuration
+### 7.3 ArgoCD Production Application Configuration
 
 ```yaml
 # argocd-payment-prod-app.yaml
@@ -994,7 +1175,7 @@ spec:
 
 ---
 
-### 6.4 Zero-Downtime Pod Lifecycle & Graceful Termination
+### 7.4 Zero-Downtime Pod Lifecycle & Graceful Termination
 
 ```yaml
 # deployment-zero-downtime.yaml
@@ -1053,16 +1234,16 @@ spec:
 
 ---
 
-### 6.5 Promotion Failure Handling & Automated Rollback
+### 7.5 Promotion Failure Handling & Automated Rollback
 
 1. **If QA Tests Fail in `commerce-qa`**: The pipeline terminates immediately. The image tag in `overlays/stage` and `overlays/prod` is never updated. The dev squad triages logs, fixes the regression, pushes a new commit, and restarts at DEV.
 2. **If Production Throws 5xx Errors After Sync**: The on-call engineer runs `git revert <commit-sha>` on `gitops-manifests` and syncs ArgoCD. Pods roll back to the previous stable image in under 30 seconds without rebuilding or rerunning CI pipelines.
 
 ---
 
-# 7. Production Observability, Metrics & Telemetry Deep Dive
+# 8. Production Observability, Metrics & Telemetry Deep Dive
 
-### 7.1 The Observability Architecture Stack
+### 8.1 The Observability Architecture Stack
 
 ```mermaid
 flowchart LR
@@ -1098,7 +1279,7 @@ flowchart LR
 
 ---
 
-### 7.2 The 4 Golden Signals: Production PromQL Formulas
+### 8.2 The 4 Golden Signals: Production PromQL Formulas
 
 | Golden Signal | Technical Focus | Production PromQL Query Formula |
 | :--- | :--- | :--- |
@@ -1109,7 +1290,7 @@ flowchart LR
 
 ---
 
-### 7.3 Production Alertmanager Configuration
+### 8.3 Production Alertmanager Configuration
 
 ```yaml
 # prometheus-rule-payment.yaml
@@ -1139,9 +1320,9 @@ spec:
 
 ---
 
-# 8. Operational Automations, Python Scripting & FinOps
+# 9. Operational Automations, Python Scripting & FinOps
 
-### 8.1 Non-Production Nightly Auto-Scaling Script (Python + K8s API)
+### 9.1 Non-Production Nightly Auto-Scaling Script (Python + K8s API)
 
 ```python
 #!/usr/bin/env python3
@@ -1188,7 +1369,7 @@ if __name__ == "__main__":
 
 ---
 
-### 8.2 AWS ECR Image Retention Lifecycle Policy
+### 9.2 AWS ECR Image Retention Lifecycle Policy
 
 ```json
 {
@@ -1221,7 +1402,7 @@ if __name__ == "__main__":
 
 ---
 
-# 9. The Production Incident Triage Playbook (5 Real-World Incidents)
+# 10. The Production Incident Triage Playbook (5 Real-World Incidents)
 
 | Incident | Primary Symptom | Root Cause | Immediate Mitigation | Permanent Fix |
 | :--- | :--- | :--- | :--- | :--- |
@@ -1233,7 +1414,7 @@ if __name__ == "__main__":
 
 ---
 
-### 9.6 Ground-Level CLI Triage Commands Reference
+### 10.6 Ground-Level CLI Triage Commands Reference
 
 ```bash
 # 1. Triage CrashLoop / OOMKilled Pods
@@ -1258,7 +1439,7 @@ aws iam get-open-id-connect-provider \
 
 ---
 
-# 10. The 5 Critical Architectural Challenges & Engineering Solutions
+# 11. The 5 Critical Architectural Challenges & Engineering Solutions
 
 1. **Managing Configuration Drift Across Environments**:
    * *Problem*: Applications ran fine in Dev but crashed in Production due to divergent Helm values and manual console hotfixes.
